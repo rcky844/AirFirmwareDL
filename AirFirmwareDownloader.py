@@ -64,6 +64,20 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V130.6.52"
     },
     {
+        "name": "V4.5",
+        "codename": "S30",
+        "model": "cc pro",
+        "chipset": "AB1562A",
+        "legacy_version_prefix": "V130.6.30"
+    },
+    {
+        "name": "V3M",
+        "codename": "S23",
+        "model": "cc pro",
+        "chipset": "AB1562M",
+        "legacy_version_prefix": "V130.1.23"
+    },
+    {
         "name": "V1E",
         "codename": "S45",
         "model": "cc ultra",
