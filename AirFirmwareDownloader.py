@@ -4,7 +4,7 @@ import os
 import json
 import re
 import xml.etree.ElementTree as ET
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from tqdm import tqdm
 from colorama import Fore, Style, init
 
@@ -21,6 +21,7 @@ ASCII_ART = r"""
 FOTA_BASE_URL = "http://twsfota.198509.xyz/tws_fota_bin"
 FOTA_SUFFIX = "_fota"
 VERSION_PATTERN = re.compile(r"V\d+(?:\.\d+){2,3}")
+INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 CHECKSUM_FILE = 'checksums.json'
 
 EARPHONE_MODELS = {
@@ -190,9 +191,13 @@ def get_version_folder(model, version):
     """Get the local download folder for a full version string."""
     return os.path.join(os.getcwd(), f"{model['name']}_{version}")
 
+def sanitize_filename(name):
+    """Decode URL escapes and replace characters unsafe in local filenames."""
+    return INVALID_FILENAME_CHARS.sub('_', unquote(name)).strip(' .')
+
 def construct_file_path(model, firmware, side):
     """Construct the local file path for a firmware package and side."""
-    file_name = f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+    file_name = f"{sanitize_filename(firmware['package'])}_{side}_FotaPackage.bin"
     return os.path.join(get_version_folder(model, firmware['version']), file_name)
 
 def construct_download_url(model, firmware, side):
