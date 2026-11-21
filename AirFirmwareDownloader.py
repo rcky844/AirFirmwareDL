@@ -27,6 +27,12 @@ INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 CHECKSUM_FILE = 'checksums.json'
 BACKUP_DIR = 'Firmware-backup'
 BACKUP_CHECKSUM_FILE = 'checksums.txt'
+FILESYSTEM_CHECKSUM_KEY = 'filesystem'
+PACKAGE_SUFFIXES = {
+    'left': '_left_FotaPackage.bin',
+    'right': '_right_FotaPackage.bin',
+    FILESYSTEM_CHECKSUM_KEY: '_FileSystemPackage.bin'
+}
 
 EARPHONE_MODELS = [
     {
@@ -189,6 +195,32 @@ def download_file(url, file_path, version):
         print(Fore.RED + Style.BRIGHT + f"An unexpected error occurred: {e}")
     return False
 
+def remote_file_exists(url):
+    """Return True when a URL points to a non-empty file."""
+    try:
+        response = requests.head(url, timeout=30, allow_redirects=True)
+        if response.status_code == 405:
+            response = requests.get(url, stream=True, timeout=30, allow_redirects=True)
+            response.close()
+        return response.status_code == 200 and int(response.headers.get('content-length', 1)) > 0
+    except requests.RequestException:
+        return False
+
+def try_download_filesystem(model, firmware, target_folder, version):
+    """Download the optional FileSystemPackage.bin into target_folder when the server has it."""
+    os.makedirs(target_folder, exist_ok=True)
+    file_path = os.path.join(target_folder, get_package_file_name(firmware, FILESYSTEM_CHECKSUM_KEY))
+    if os.path.isfile(file_path):
+        return file_path
+
+    url = construct_download_url(model, firmware, FILESYSTEM_CHECKSUM_KEY)
+    if not remote_file_exists(url):
+        return None
+
+    if download_file(url, file_path, f"{version} filesystem"):
+        return file_path
+    return None
+
 def load_checksums(json_file):
     """Load checksums from a JSON file."""
     with open(json_file, 'r') as f:
@@ -210,15 +242,24 @@ def load_checksums(json_file):
                 model_checksums[f"{prefix}.{key}"] = model_checksums.pop(key)
     return checksums
 
-def compare_checksums(codename, version, left_sha256, right_sha256, checksums):
+def compare_checksums(codename, version, left_sha256, right_sha256, checksums, filesystem_sha256=None):
     """Compare calculated checksums with expected checksums."""
-    expected = checksums.get(codename, {}).get(version, {"left": None, "right": None})
-    return {
+    expected = checksums.get(codename, {}).get(version, {})
+
+    def matches(side, calculated):
+        value = expected.get(side)
+        return calculated.lower() == value.lower() if calculated and value else None
+
+    results = {
         "left_file_checksum": left_sha256,
         "right_file_checksum": right_sha256,
-        "left_match": left_sha256.lower() == expected.get("left", "").lower() if expected.get("left") else None,
-        "right_match": right_sha256.lower() == expected.get("right", "").lower() if expected.get("right") else None
+        "left_match": matches('left', left_sha256),
+        "right_match": matches('right', right_sha256)
     }
+    if filesystem_sha256:
+        results["filesystem_file_checksum"] = filesystem_sha256
+        results["filesystem_match"] = matches(FILESYSTEM_CHECKSUM_KEY, filesystem_sha256)
+    return results
 
 def print_comparison_results(results):
     """Print comparison results in a formatted manner."""
@@ -228,6 +269,9 @@ def print_comparison_results(results):
     print(Fore.GREEN + Style.BRIGHT + f"Right file checksum: {results['right_file_checksum']}")
     print(Fore.GREEN + Style.BRIGHT + f"Left file match:     {get_match_result(results['left_match'])}")
     print(Fore.GREEN + Style.BRIGHT + f"Right file match:    {get_match_result(results['right_match'])}")
+    if 'filesystem_file_checksum' in results:
+        print(Fore.GREEN + Style.BRIGHT + f"Filesystem checksum: {results['filesystem_file_checksum']}")
+        print(Fore.GREEN + Style.BRIGHT + f"Filesystem match:    {get_match_result(results['filesystem_match'])}")
     print(Fore.GREEN + Style.BRIGHT + "=" * 50)
 
 def get_match_result(match):
@@ -238,9 +282,12 @@ def get_match_result(match):
     else:
         return 'Not available in checksums.json'
 
-def verify_files(codename, version, left_path, right_path, checksums):
-    """Hash both packages and print the checksum comparison."""
-    results = compare_checksums(codename, version, calculate_sha256(left_path), calculate_sha256(right_path), checksums)
+def verify_files(codename, version, left_path, right_path, checksums, filesystem_path=None):
+    """Hash the packages and print the checksum comparison."""
+    filesystem_sha256 = calculate_sha256(filesystem_path) if filesystem_path and os.path.isfile(filesystem_path) else None
+    results = compare_checksums(
+        codename, version, calculate_sha256(left_path), calculate_sha256(right_path), checksums, filesystem_sha256
+    )
     print_comparison_results(results)
 
 def get_version_folder(model, version):
@@ -252,17 +299,17 @@ def sanitize_filename(name):
     return INVALID_FILENAME_CHARS.sub('_', unquote(name)).strip(' .')
 
 def get_package_file_name(firmware, side):
-    """Build the local file name for one side of a firmware package."""
-    return f"{sanitize_filename(firmware['package'])}_{side}_FotaPackage.bin"
+    """Build the local file name for a left, right, or filesystem package."""
+    return f"{sanitize_filename(firmware['package'])}{PACKAGE_SUFFIXES[side]}"
 
 def construct_file_path(model, firmware, side):
-    """Construct the local file path for a firmware package and side."""
+    """Construct the local file path for a firmware package."""
     return os.path.join(get_version_folder(model, firmware['version']), get_package_file_name(firmware, side))
 
 def construct_download_url(model, firmware, side):
-    """Construct the download URL for a firmware package and side."""
+    """Construct the download URL for a firmware package."""
     folder = quote(firmware['folder'], safe='')
-    file_name = f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+    file_name = f"{quote(firmware['package'], safe='')}{PACKAGE_SUFFIXES[side]}"
     return f"{FOTA_BASE_URL}/{model['codename']}/{model['chipset']}/{folder}/{file_name}"
 
 def get_backup_folder(model, version):
@@ -280,32 +327,30 @@ def save_checksums(json_file, checksums):
         json.dump(ordered, f, indent=4)
         f.write('\n')
 
-def write_backup_checksums(backup_folder, left_sha256, right_sha256):
+def write_backup_checksums(backup_folder, hashes):
     """Write the checksum file that accompanies backed-up firmware packages."""
     with open(os.path.join(backup_folder, BACKUP_CHECKSUM_FILE), 'w') as f:
-        f.write(f"left - {left_sha256}\n")
-        f.write(f"right - {right_sha256}\n")
+        for side in ('left', 'right', FILESYSTEM_CHECKSUM_KEY):
+            value = hashes.get(side)
+            if value:
+                f.write(f"{side} - {value}\n")
 
 def get_legacy_package_file_name(firmware, side):
     """Build the file name used by older backups, which kept the URL escaping."""
-    return f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+    return f"{quote(firmware['package'], safe='')}{PACKAGE_SUFFIXES[side]}"
 
-def get_existing_backup_paths(model, firmware):
-    """Return paths to both backed-up packages for a version, if they exist."""
+def find_backup_file(backup_folder, firmware, side):
+    """Find a backed-up package by side, allowing legacy escaped names."""
+    for name in (get_package_file_name(firmware, side), get_legacy_package_file_name(firmware, side)):
+        path = os.path.join(backup_folder, name)
+        if os.path.isfile(path):
+            return path
+    return None
+
+def get_existing_backup_paths(model, firmware, sides=('left', 'right', FILESYSTEM_CHECKSUM_KEY)):
+    """Return available backed-up package paths for a version, keyed by side."""
     backup_folder = get_backup_folder(model, firmware['version'])
-    paths = []
-    for side in ('left', 'right'):
-        candidates = (get_package_file_name(firmware, side), get_legacy_package_file_name(firmware, side))
-        match = None
-        for name in candidates:
-            path = os.path.join(backup_folder, name)
-            if os.path.isfile(path):
-                match = path
-                break
-        if match is None:
-            return None
-        paths.append(match)
-    return paths
+    return {side: find_backup_file(backup_folder, firmware, side) for side in sides}
 
 def backup_is_complete(model, firmware):
     """Check whether a version already has backed-up packages and a checksum file."""
@@ -313,39 +358,78 @@ def backup_is_complete(model, firmware):
     if not os.path.isfile(os.path.join(backup_folder, BACKUP_CHECKSUM_FILE)):
         return False
 
-    for side in ('left', 'right'):
-        names = (get_package_file_name(firmware, side), get_legacy_package_file_name(firmware, side))
-        if not any(os.path.isfile(os.path.join(backup_folder, name)) for name in names):
-            return False
-    return True
+    paths = get_existing_backup_paths(model, firmware, ('left', 'right'))
+    return all(paths.values())
+
+def copy_filesystem_from_backup(model, firmware, backup_paths, version_folder):
+    """Place a backed-up filesystem package in the local version folder when present."""
+    local_path = construct_file_path(model, firmware, FILESYSTEM_CHECKSUM_KEY)
+    if os.path.isfile(local_path):
+        return local_path
+
+    backup_path = backup_paths.get(FILESYSTEM_CHECKSUM_KEY)
+    if not backup_path:
+        return None
+
+    os.makedirs(version_folder, exist_ok=True)
+    shutil.copy2(backup_path, local_path)
+    print(Fore.GREEN + Style.BRIGHT + "Copied FileSystemPackage from backup.")
+    return local_path
 
 def register_version(model, firmware, checksums, label="New version"):
-    """Back up a version and record its checksums if they are not already stored."""
+    """Back up a version and record its checksums, including an optional filesystem package."""
     version = firmware['version']
     model_checksums = checksums.setdefault(get_model_codename(model), {})
-    if version in model_checksums and backup_is_complete(model, firmware):
-        return False
-
+    stored_hashes = model_checksums.get(version)
     backup_folder = get_backup_folder(model, version)
     os.makedirs(backup_folder, exist_ok=True)
 
-    print(Fore.YELLOW + Style.BRIGHT + f"\n{label} {version} for {model['name']}; updating {BACKUP_DIR} and {CHECKSUM_FILE}...")
-    left_path = os.path.join(backup_folder, get_package_file_name(firmware, 'left'))
-    right_path = os.path.join(backup_folder, get_package_file_name(firmware, 'right'))
-    left_downloaded = download_file(construct_download_url(model, firmware, 'left'), left_path, f"{version} left")
-    right_downloaded = download_file(construct_download_url(model, firmware, 'right'), right_path, f"{version} right")
+    backup_paths = get_existing_backup_paths(model, firmware)
+    have_backup = (backup_paths['left'] and backup_paths['right']
+                   and os.path.isfile(os.path.join(backup_folder, BACKUP_CHECKSUM_FILE)))
+    hashes = dict(stored_hashes) if stored_hashes else {}
+    changed = False
 
-    if not (left_downloaded and right_downloaded):
-        print(Fore.RED + Style.BRIGHT + f"Could not register version {version}; skipping it.")
-        return False
+    if have_backup:
+        left_path = backup_paths['left']
+        right_path = backup_paths['right']
+        if not stored_hashes:
+            hashes['left'] = calculate_sha256(left_path)
+            hashes['right'] = calculate_sha256(right_path)
+            changed = True
+    else:
+        print(Fore.YELLOW + Style.BRIGHT + f"\n{label} {version} for {model['name']}; updating {BACKUP_DIR} and {CHECKSUM_FILE}...")
+        left_path = os.path.join(backup_folder, get_package_file_name(firmware, 'left'))
+        right_path = os.path.join(backup_folder, get_package_file_name(firmware, 'right'))
+        left_downloaded = download_file(construct_download_url(model, firmware, 'left'), left_path, f"{version} left")
+        right_downloaded = download_file(construct_download_url(model, firmware, 'right'), right_path, f"{version} right")
+        if not (left_downloaded and right_downloaded):
+            print(Fore.RED + Style.BRIGHT + f"Could not register version {version}; skipping it.")
+            return False
+        hashes['left'] = calculate_sha256(left_path)
+        hashes['right'] = calculate_sha256(right_path)
+        changed = True
 
-    left_sha256 = calculate_sha256(left_path)
-    right_sha256 = calculate_sha256(right_path)
-    write_backup_checksums(backup_folder, left_sha256, right_sha256)
-    model_checksums[version] = {"left": left_sha256, "right": right_sha256}
-    save_checksums(CHECKSUM_FILE, checksums)
-    print(Fore.GREEN + Style.BRIGHT + f"Registered version {version} with checksums.")
-    return True
+    filesystem_path = backup_paths[FILESYSTEM_CHECKSUM_KEY]
+    if not filesystem_path:
+        filesystem_path = try_download_filesystem(model, firmware, backup_folder, version)
+    if filesystem_path:
+        filesystem_hash = calculate_sha256(filesystem_path)
+        if hashes.get(FILESYSTEM_CHECKSUM_KEY) != filesystem_hash:
+            hashes[FILESYSTEM_CHECKSUM_KEY] = filesystem_hash
+            changed = True
+
+    if changed or not stored_hashes:
+        write_backup_checksums(backup_folder, hashes)
+        model_checksums[version] = hashes
+        save_checksums(CHECKSUM_FILE, checksums)
+        if stored_hashes and hashes.get(FILESYSTEM_CHECKSUM_KEY) and not stored_hashes.get(FILESYSTEM_CHECKSUM_KEY):
+            print(Fore.GREEN + Style.BRIGHT + f"Added FileSystemPackage to {BACKUP_DIR} and recorded its checksum for {version}.")
+        elif stored_hashes:
+            print(Fore.GREEN + Style.BRIGHT + f"Updated backup data for version {version}.")
+        else:
+            print(Fore.GREEN + Style.BRIGHT + f"Registered version {version} with checksums.")
+    return changed
 
 def register_new_versions(model, firmwares, checksums):
     """Back up every FOTA version that is not yet fully recorded."""
@@ -406,7 +490,7 @@ def main(discover=True):
                 try:
                     registered = register_new_versions(model, firmwares, checksums)
                     if registered:
-                        print(Fore.GREEN + Style.BRIGHT + f"Added {registered} new version(s) to {BACKUP_DIR} and {CHECKSUM_FILE}.")
+                        print(Fore.GREEN + Style.BRIGHT + f"Added/updated {registered} version(s) in {BACKUP_DIR} and {CHECKSUM_FILE}.")
                 except Exception as e:
                     print(Fore.RED + Style.BRIGHT + f"Could not update backups for {model['name']}: {e}")
 
@@ -442,35 +526,40 @@ def main(discover=True):
                     print(Fore.RED + Style.BRIGHT + f"Could not update backups for version {version}: {e}")
 
             version_folder = get_version_folder(model, version)
-            left_file_path = construct_file_path(model, firmware, "left")
-            right_file_path = construct_file_path(model, firmware, "right")
+            left_file_path = construct_file_path(model, firmware, 'left')
+            right_file_path = construct_file_path(model, firmware, 'right')
+            backup_paths = get_existing_backup_paths(model, firmware)
 
             if os.path.exists(version_folder) and os.path.isfile(left_file_path) and os.path.isfile(right_file_path):
+                filesystem_path = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
-                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums)
+                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums, filesystem_path)
                 break
 
-            backup_paths = get_existing_backup_paths(model, firmware)
-            if backup_paths:
+            if backup_paths['left'] and backup_paths['right']:
                 os.makedirs(version_folder, exist_ok=True)
-                shutil.copy2(backup_paths[0], left_file_path)
-                shutil.copy2(backup_paths[1], right_file_path)
+                shutil.copy2(backup_paths['left'], left_file_path)
+                shutil.copy2(backup_paths['right'], right_file_path)
+                filesystem_path = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already backed up; copied files from {BACKUP_DIR}.")
-                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums)
+                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums, filesystem_path)
                 break
 
             os.makedirs(version_folder, exist_ok=True)
 
-            left_file_url = construct_download_url(model, firmware, "left")
-            right_file_url = construct_download_url(model, firmware, "right")
+            left_file_url = construct_download_url(model, firmware, 'left')
+            right_file_url = construct_download_url(model, firmware, 'right')
 
             print(Fore.CYAN + Style.BRIGHT + f"Downloading files for {model['name']} version {version}...")
             left_downloaded = download_file(left_file_url, left_file_path, version)
             right_downloaded = download_file(right_file_url, right_file_path, version)
 
             if left_downloaded and right_downloaded:
+                filesystem_path = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
+                if not filesystem_path and not discover:
+                    filesystem_path = try_download_filesystem(model, firmware, version_folder, version)
                 print(Fore.GREEN + Style.BRIGHT + "\nFiles downloaded successfully!")
-                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums)
+                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums, filesystem_path)
             else:
                 print(Fore.RED + Style.BRIGHT + "Failed to download one or both files.")
             

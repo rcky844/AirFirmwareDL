@@ -6,6 +6,7 @@ AirFirmware is a Python script that facilitates easy downloading and verificatio
 ## Features
 - Downloading firmware files for various versions; versions already in `Firmware-backup` are copied locally instead of downloaded again
 - Automatic calculation of SHA-256 checksums
+- Optional download of `FileSystemPackage.bin` when the FOTA folder contains one (e.g. `S23_cc pro_AB1562M_ENC_V130.1.23.200_FileSystemPackage.bin`)
 - Optional automatic discovery of new FOTA versions: backups and `checksums.json` are updated when the server publishes a version that is not yet recorded
 - Comparing calculated checksums with those of 100% functional firmware files
 - Colorful and user-friendly console interface
@@ -63,7 +64,7 @@ Check out this video to see how the script works:
 
 ## Project Structure
 - `AirFirmwareDownloader.py`: Main script
-- `checksums.json`: File containing expected checksums keyed by model codename (e.g., `S523_cc pro`) and full firmware version string (e.g., `V310.6.505.153`)
+- `checksums.json`: File containing expected checksums keyed by model codename (e.g., `S523_cc pro`) and full firmware version string (e.g., `V310.6.505.153`); entries may also include a `filesystem` checksum for an available `FileSystemPackage.bin`
 - `Firmware-backup/`: Folder containing pre-downloaded firmware `.bin` files and corresponding checksum files (`checksums.txt`), organized as `<codename>/<model>/<version>` (e.g., `S523/cc pro/V31.6.523.5`)
 - `README.md`: Description file
 - `requirements.txt`: List of required libraries
