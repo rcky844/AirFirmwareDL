@@ -65,6 +65,13 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.45"
     },
     {
+        "name": "V3 Metal (Max V3 TB)",
+        "codename": "H25",
+        "model": "cc ultra max",
+        "chipset": "AB1562AE",
+        "legacy_version_prefix": "V310.6.25"
+    },
+    {
         "name": "Unknown AB1562F",
         "codename": "S52",
         "model": "GreenBuds",
