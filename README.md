@@ -6,6 +6,7 @@ AirFirmware is a Python script that facilitates easy downloading and verificatio
 ## Features
 - Downloading firmware files for various versions
 - Automatic calculation of SHA-256 checksums
+- Optional automatic discovery of new FOTA versions: backups and `checksums.json` are updated when the server publishes a version that is not yet recorded
 - Comparing calculated checksums with those of 100% functional firmware files
 - Colorful and user-friendly console interface
 - Support for multiple firmware versions
@@ -43,8 +44,9 @@ Check out this video to see how the script works:
    ```
    python AirFirmwareDownloader.py
    ```
-2. Select an earphone model. The script checks the available firmware versions from `http://twsfota.198509.xyz/tws_fota_bin/<codename>/<chipset>/fota`.
-3. Enter the full firmware version you want to download (e.g., `V310.6.505.153`). Press Enter to list all versions reported by the FOTA server. The final build number (e.g., `153`) or a FOTA source version string is also accepted.
+   Automatic discovery is enabled by default. Pass `--no-discover` (or `-n`) to skip backing up newly discovered versions and updating `checksums.json`; use `--discover` to enable it explicitly.
+2. Select an earphone model. The script checks the available firmware versions from `http://twsfota.198509.xyz/tws_fota_bin/<codename>/<chipset>/fota`. Any versions not yet in `checksums.json` are downloaded into `Firmware-backup`, checksummed, and recorded automatically.
+3. Enter the full firmware version you want to download (e.g., `V310.6.505.153`). Press Enter to list all versions reported by the FOTA server. The final build number (e.g., `153`) or a FOTA source version string is also accepted. Older versions not listed by FOTA can be entered manually (full string or build number); they are backed up and added to `checksums.json` the same way.
 4. The script will download the files and display the checksum verification results.
 
 ### Firmware-Backup Folder

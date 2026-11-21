@@ -15,18 +15,26 @@
         "V310.6.505.153": {
             "left": "0210e4ad47a913e187178d3d13f1b137a22201cf02ee880ce0f269c8c7eae748",
             "right": "ec7d0057f093958df0792d30f2c88c5adb987badc0c54981c85c4f11e4feec6a"
+        },
+        "V310.6.505.190": {
+            "left": "29f19131bf9baf803de8a8661831d945c207b15b674cc89a7595ef2bb05ae029",
+            "right": "4cd622986c433af0de0bc2356431a9a92a32bffe13a95f36a41575272479db89"
         }
     },
     "V1E": {
         "V31.6.45.144": {
-            "left": "4EA303F5C10572D2C3347A8E8F5488CB753FD40A411DEAFEFF3513645D735C85",
-            "right": "9AC3FF19DB8C52DFC1FBEF5601FA60B760005774E077498F92B68FF855DCF5E0"
+            "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",
+            "right": "9ac3ff19db8c52dfc1fbef5601fa60b760005774e077498f92b68ff855dcf5e0"
+        },
+        "V31.6.45.153": {
+            "left": "5795777a409e996bdf0ce6f9dfeaa4e844a35b924d6484084da5a2aef28b90c1",
+            "right": "b8989d3b27b5a4e05a3e874a4f12a13b57c89687d935aaa2ec4e54f5b96289e5"
         }
     },
     "V4.9 TB": {
         "V31.6.305.162": {
-            "left": "4781193DD399278DF583D220C5804E5985961370425EED3D339C5C613BA4546F",
-            "right": "7CDEFF75C420316646C67FE9FAD6F5F3E365A1791A55241E351924F411D78BDA"
+            "left": "4781193dd399278df583d220c5804e5985961370425eed3d339c5c613ba4546f",
+            "right": "7cdeff75c420316646c67fe9fad6f5f3e365a1791a55241e351924f411d78bda"
         }
     }
 }

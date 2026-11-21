@@ -1,3 +1,4 @@
+import argparse
 import hashlib
 import requests
 import os
@@ -23,6 +24,8 @@ FOTA_SUFFIX = "_fota"
 VERSION_PATTERN = re.compile(r"V\d+(?:\.\d+){2,3}")
 INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 CHECKSUM_FILE = 'checksums.json'
+BACKUP_DIR = 'Firmware-backup'
+BACKUP_CHECKSUM_FILE = 'checksums.txt'
 
 EARPHONE_MODELS = {
     "1": {
@@ -189,16 +192,19 @@ def get_match_result(match):
 
 def get_version_folder(model, version):
     """Get the local download folder for a full version string."""
-    return os.path.join(os.getcwd(), f"{model['name']}_{version}")
+    return os.path.join(os.getcwd(), version)
 
 def sanitize_filename(name):
     """Decode URL escapes and replace characters unsafe in local filenames."""
     return INVALID_FILENAME_CHARS.sub('_', unquote(name)).strip(' .')
 
+def get_package_file_name(firmware, side):
+    """Build the local file name for one side of a firmware package."""
+    return f"{sanitize_filename(firmware['package'])}_{side}_FotaPackage.bin"
+
 def construct_file_path(model, firmware, side):
     """Construct the local file path for a firmware package and side."""
-    file_name = f"{sanitize_filename(firmware['package'])}_{side}_FotaPackage.bin"
-    return os.path.join(get_version_folder(model, firmware['version']), file_name)
+    return os.path.join(get_version_folder(model, firmware['version']), get_package_file_name(firmware, side))
 
 def construct_download_url(model, firmware, side):
     """Construct the download URL for a firmware package and side."""
@@ -206,10 +212,100 @@ def construct_download_url(model, firmware, side):
     file_name = f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
     return f"{FOTA_BASE_URL}/{model['codename']}/{model['chipset']}/{folder}/{file_name}"
 
-def main():
+def get_backup_folder(model, version):
+    """Get the backup folder for a full version string."""
+    return os.path.join(os.getcwd(), BACKUP_DIR, model['name'], version)
+
+def save_checksums(json_file, checksums):
+    """Write checksums back to disk."""
+    with open(json_file, 'w') as f:
+        json.dump(checksums, f, indent=4)
+        f.write('\n')
+
+def write_backup_checksums(backup_folder, left_sha256, right_sha256):
+    """Write the checksum file that accompanies backed-up firmware packages."""
+    with open(os.path.join(backup_folder, BACKUP_CHECKSUM_FILE), 'w') as f:
+        f.write(f"left - {left_sha256}\n")
+        f.write(f"right - {right_sha256}\n")
+
+def get_legacy_package_file_name(firmware, side):
+    """Build the file name used by older backups, which kept the URL escaping."""
+    return f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+
+def backup_is_complete(model, firmware):
+    """Check whether a version already has backed-up packages and a checksum file."""
+    backup_folder = get_backup_folder(model, firmware['version'])
+    if not os.path.isfile(os.path.join(backup_folder, BACKUP_CHECKSUM_FILE)):
+        return False
+
+    for side in ('left', 'right'):
+        names = (get_package_file_name(firmware, side), get_legacy_package_file_name(firmware, side))
+        if not any(os.path.isfile(os.path.join(backup_folder, name)) for name in names):
+            return False
+    return True
+
+def register_version(model, firmware, checksums, label="New version"):
+    """Back up a version and record its checksums if they are not already stored."""
+    version = firmware['version']
+    model_checksums = checksums.setdefault(model['name'], {})
+    if version in model_checksums and backup_is_complete(model, firmware):
+        return False
+
+    backup_folder = get_backup_folder(model, version)
+    os.makedirs(backup_folder, exist_ok=True)
+
+    print(Fore.YELLOW + Style.BRIGHT + f"\n{label} {version} for {model['name']}; updating {BACKUP_DIR} and {CHECKSUM_FILE}...")
+    left_path = os.path.join(backup_folder, get_package_file_name(firmware, 'left'))
+    right_path = os.path.join(backup_folder, get_package_file_name(firmware, 'right'))
+    left_downloaded = download_file(construct_download_url(model, firmware, 'left'), left_path, f"{version} left")
+    right_downloaded = download_file(construct_download_url(model, firmware, 'right'), right_path, f"{version} right")
+
+    if not (left_downloaded and right_downloaded):
+        print(Fore.RED + Style.BRIGHT + f"Could not register version {version}; skipping it.")
+        return False
+
+    left_sha256 = calculate_sha256(left_path)
+    right_sha256 = calculate_sha256(right_path)
+    write_backup_checksums(backup_folder, left_sha256, right_sha256)
+    model_checksums[version] = {"left": left_sha256, "right": right_sha256}
+    save_checksums(CHECKSUM_FILE, checksums)
+    print(Fore.GREEN + Style.BRIGHT + f"Registered version {version} with checksums.")
+    return True
+
+def register_new_versions(model, firmwares, checksums):
+    """Back up every FOTA version that is not yet fully recorded."""
+    return sum(1 for version in sort_versions(firmwares)
+               if register_version(model, firmwares[version], checksums))
+
+def build_manual_firmware(firmwares, version):
+    """Build package metadata for a manually entered full version string."""
+    template = next(iter(firmwares.values()), None)
+    if template is None or not VERSION_PATTERN.search(template['package']):
+        return None
+
+    package = VERSION_PATTERN.sub(version, template['package'], count=1)
+    return {
+        'version': version,
+        'package': package,
+        'folder': f"{package}{FOTA_SUFFIX}",
+        'source_version': 'manual'
+    }
+
+def parse_args():
+    """Parse command-line options."""
+    parser = argparse.ArgumentParser(description="Download and verify earphone firmware packages.")
+    parser.add_argument('--discover', dest='discover', action='store_true',
+                        help="back up newly discovered versions and update checksums.json (default)")
+    parser.add_argument('--no-discover', '-n', dest='discover', action='store_false', default=True,
+                        help="skip automatic backup and checksum discovery")
+    return parser.parse_args()
+
+def main(discover=True):
     """Main function to run the program."""
     print_ascii_welcome()
     checksums = load_checksums(CHECKSUM_FILE)
+    if not discover:
+        print(Fore.YELLOW + Style.BRIGHT + "Automatic version discovery is disabled.")
 
     while True:
         try:
@@ -231,8 +327,16 @@ def main():
                 print(Fore.RED + Style.BRIGHT + f"Could not check firmware versions from {get_fota_url(model)}: {e}")
                 continue
 
+            if discover:
+                try:
+                    registered = register_new_versions(model, firmwares, checksums)
+                    if registered:
+                        print(Fore.GREEN + Style.BRIGHT + f"Added {registered} new version(s) to {BACKUP_DIR} and {CHECKSUM_FILE}.")
+                except Exception as e:
+                    print(Fore.RED + Style.BRIGHT + f"Could not update backups for {model['name']}: {e}")
+
             latest_version = sort_versions(firmwares)[0]
-            version_input = input(Fore.YELLOW + Style.BRIGHT + f"Enter the firmware version for {model['name']} (e.g., {latest_version}), or press Enter to display available versions: ").strip()
+            version_input = input(Fore.YELLOW + Style.BRIGHT + f"Enter the firmware version for {model['name']} (e.g., {latest_version}), an older full version string, or press Enter to display available versions: ").strip()
 
             if not version_input:
                 print(Fore.YELLOW + Style.BRIGHT + f"\nAvailable Versions for {model['name']}:")
@@ -240,12 +344,28 @@ def main():
                     print(Fore.GREEN + Style.BRIGHT + f"Version {version} is available.")
                 version_input = input(Fore.YELLOW + Style.BRIGHT + f"\nPlease enter the firmware version you want to download for {model['name']}: ").strip()
 
-            version = resolve_version_input(version_input, firmwares)
+            entered_version = version_input
+            if VERSION_PATTERN.fullmatch(entered_version) is None and entered_version.isdigit():
+                entered_version = f"{model['legacy_version_prefix']}.{entered_version}"
+
+            version = resolve_version_input(entered_version, firmwares)
             if version is None:
-                print(Fore.RED + Style.BRIGHT + "Invalid version provided. Please try again.")
-                continue
+                manual_firmware = build_manual_firmware(firmwares, entered_version)
+                if manual_firmware is None:
+                    print(Fore.RED + Style.BRIGHT + "Invalid version provided. Please try again.")
+                    continue
+                version = manual_firmware['version']
+                firmwares[version] = manual_firmware
+                print(Fore.YELLOW + Style.BRIGHT + f"Version {version} is not listed by FOTA; treating it as a manual entry.")
 
             firmware = firmwares[version]
+            if discover:
+                try:
+                    register_version(model, firmware, checksums,
+                                     "Manually entered version" if firmware['source_version'] == 'manual' else "New version")
+                except Exception as e:
+                    print(Fore.RED + Style.BRIGHT + f"Could not update backups for version {version}: {e}")
+
             version_folder = get_version_folder(model, version)
             left_file_path = construct_file_path(model, firmware, "left")
             right_file_path = construct_file_path(model, firmware, "right")
@@ -289,4 +409,4 @@ def main():
             return
 
 if __name__ == "__main__":
-    main()
+    main(parse_args().discover)
