@@ -49,6 +49,24 @@
             "right": "7cdeff75c420316646c67fe9fad6f5f3e365a1791a55241e351924f411d78bda"
         }
     },
+    "S52_cc pro": {
+        "V130.6.52.120": {
+            "left": "0034503860d47921c911c1d68640e733f573e5e957a9be4ab06f985970a2a68e",
+            "right": "128b550505934ab71ea68227fe222441bd60c3c3103c550a04d771527e5ce161"
+        },
+        "V130.6.52.125": {
+            "left": "f287e0cb7dae0a77ec1ec64ceaa7f7a282e9cf22ef3910324a63d7c22e1b0d1e",
+            "right": "2a03113d21329dcf27d76ad87a9184eed582211b8d00bd4df1001d24e5310ef7"
+        },
+        "V130.6.52.127": {
+            "left": "da65decce72c5c77f895e35f11e56c50224e04cc46e7c1525ca8221f9f09a778",
+            "right": "e58ae2e8c3ddc7329813fd12711e6f1266dc51041fd499d2474c9a95c283788a"
+        },
+        "V130.6.52.128": {
+            "left": "364ef3508085d0292056d2f22db20983f236751a17ffc66ed9ddee548e761290",
+            "right": "ec0ead63d6501841d88741cd192458af1fce9ce6fbb6816b0b4176729b9db248"
+        }
+    },
     "S45_cc ultra": {
         "V31.6.45.144": {
             "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",
@@ -57,6 +75,12 @@
         "V31.6.45.153": {
             "left": "5795777a409e996bdf0ce6f9dfeaa4e844a35b924d6484084da5a2aef28b90c1",
             "right": "b8989d3b27b5a4e05a3e874a4f12a13b57c89687d935aaa2ec4e54f5b96289e5"
+        }
+    },
+    "S52_GreenBuds": {
+        "V130.6.52.21": {
+            "left": "147133d9a2621252a5a9abf96cca9c7d40b275e4bf4fd6c0317aadc92c8dae70",
+            "right": "237c25b58c3510328d6b562b6b0609510acd5a44234d663fb811f143ef4c226f"
         }
     }
 }

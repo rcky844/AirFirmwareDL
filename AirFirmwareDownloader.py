@@ -51,11 +51,25 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.305"
     },
     {
+        "name": "V4.6 TB",
+        "codename": "S52",
+        "model": "cc pro",
+        "chipset": "AB1562F",
+        "legacy_version_prefix": "V130.6.52"
+    },
+    {
         "name": "V1E",
         "codename": "S45",
         "model": "cc ultra",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.45"
+    },
+    {
+        "name": "Unknown AB1562F",
+        "codename": "S52",
+        "model": "GreenBuds",
+        "chipset": "AB1562F",
+        "legacy_version_prefix": "V130.6.52"
     }
 ]
 
