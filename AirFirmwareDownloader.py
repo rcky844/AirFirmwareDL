@@ -154,18 +154,23 @@ def load_checksums(json_file):
     with open(json_file, 'r') as f:
         checksums = json.load(f)
 
-    # Older releases keyed checksums by the final build number only.
+    # Older releases keyed checksums by display name and by final build number only.
     for model in EARPHONE_MODELS.values():
-        model_checksums = checksums.get(model['name'], {})
+        codename = model['codename']
+        legacy_entries = checksums.pop(model['name'], {})
+        model_checksums = checksums.setdefault(codename, {})
+        for version, hashes in legacy_entries.items():
+            model_checksums.setdefault(version, hashes)
+
         prefix = model['legacy_version_prefix']
         for key in list(model_checksums):
             if str(key).isdigit():
                 model_checksums[f"{prefix}.{key}"] = model_checksums.pop(key)
     return checksums
 
-def compare_checksums(model_name, version, left_sha256, right_sha256, checksums):
+def compare_checksums(codename, version, left_sha256, right_sha256, checksums):
     """Compare calculated checksums with expected checksums."""
-    expected = checksums.get(model_name, {}).get(version, {"left": None, "right": None})
+    expected = checksums.get(codename, {}).get(version, {"left": None, "right": None})
     return {
         "left_file_checksum": left_sha256,
         "right_file_checksum": right_sha256,
@@ -191,9 +196,9 @@ def get_match_result(match):
     else:
         return 'Not available in checksums.json'
 
-def verify_files(model_name, version, left_path, right_path, checksums):
+def verify_files(codename, version, left_path, right_path, checksums):
     """Hash both packages and print the checksum comparison."""
-    results = compare_checksums(model_name, version, calculate_sha256(left_path), calculate_sha256(right_path), checksums)
+    results = compare_checksums(codename, version, calculate_sha256(left_path), calculate_sha256(right_path), checksums)
     print_comparison_results(results)
 
 def get_version_folder(model, version):
@@ -220,7 +225,7 @@ def construct_download_url(model, firmware, side):
 
 def get_backup_folder(model, version):
     """Get the backup folder for a full version string."""
-    return os.path.join(os.getcwd(), BACKUP_DIR, model['name'], version)
+    return os.path.join(os.getcwd(), BACKUP_DIR, model['codename'], version)
 
 def save_checksums(json_file, checksums):
     """Write checksums back to disk."""
@@ -270,7 +275,7 @@ def backup_is_complete(model, firmware):
 def register_version(model, firmware, checksums, label="New version"):
     """Back up a version and record its checksums if they are not already stored."""
     version = firmware['version']
-    model_checksums = checksums.setdefault(model['name'], {})
+    model_checksums = checksums.setdefault(model['codename'], {})
     if version in model_checksums and backup_is_complete(model, firmware):
         return False
 
@@ -395,7 +400,7 @@ def main(discover=True):
 
             if os.path.exists(version_folder) and os.path.isfile(left_file_path) and os.path.isfile(right_file_path):
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
-                verify_files(model['name'], version, left_file_path, right_file_path, checksums)
+                verify_files(model['codename'], version, left_file_path, right_file_path, checksums)
                 break
 
             backup_paths = get_existing_backup_paths(model, firmware)
@@ -404,7 +409,7 @@ def main(discover=True):
                 shutil.copy2(backup_paths[0], left_file_path)
                 shutil.copy2(backup_paths[1], right_file_path)
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already backed up; copied files from {BACKUP_DIR}.")
-                verify_files(model['name'], version, left_file_path, right_file_path, checksums)
+                verify_files(model['codename'], version, left_file_path, right_file_path, checksums)
                 break
 
             os.makedirs(version_folder, exist_ok=True)
@@ -418,7 +423,7 @@ def main(discover=True):
 
             if left_downloaded and right_downloaded:
                 print(Fore.GREEN + Style.BRIGHT + "\nFiles downloaded successfully!")
-                verify_files(model['name'], version, left_file_path, right_file_path, checksums)
+                verify_files(model['codename'], version, left_file_path, right_file_path, checksums)
             else:
                 print(Fore.RED + Style.BRIGHT + "Failed to download one or both files.")
             

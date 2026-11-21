@@ -1,5 +1,5 @@
 {
-    "V5.2 TB": {
+    "S505": {
         "V310.6.505.133": {
             "left": "bef44919a4be5f48d7b47471ba8721744fa9e432d908fd6ddb486bb7b727b7e1",
             "right": "58f10a319ffd2ae18a064698f462b74c5eb885015278f75c4093bce2e73f3d02"
@@ -21,7 +21,7 @@
             "right": "4cd622986c433af0de0bc2356431a9a92a32bffe13a95f36a41575272479db89"
         }
     },
-    "V1E": {
+    "S45": {
         "V31.6.45.144": {
             "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",
             "right": "9ac3ff19db8c52dfc1fbef5601fa60b760005774e077498f92b68ff855dcf5e0"
@@ -31,7 +31,7 @@
             "right": "b8989d3b27b5a4e05a3e874a4f12a13b57c89687d935aaa2ec4e54f5b96289e5"
         }
     },
-    "V4.9 TB": {
+    "S305": {
         "V31.6.305.162": {
             "left": "4781193dd399278df583d220c5804e5985961370425eed3d339c5c613ba4546f",
             "right": "7cdeff75c420316646c67fe9fad6f5f3e365a1791a55241e351924f411d78bda"

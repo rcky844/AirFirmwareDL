@@ -63,8 +63,8 @@ Check out this video to see how the script works:
 
 ## Project Structure
 - `AirFirmwareDownloader.py`: Main script
-- `checksums.json`: File containing expected checksums keyed by full firmware version string (e.g., `V310.6.505.153`)
-- `Firmware-backup/`: Folder containing pre-downloaded firmware `.bin` files and corresponding checksum files (`checksums.txt`)
+- `checksums.json`: File containing expected checksums keyed by codename (e.g., `S505`) and full firmware version string (e.g., `V310.6.505.153`)
+- `Firmware-backup/`: Folder containing pre-downloaded firmware `.bin` files and corresponding checksum files (`checksums.txt`), organized by codename and version
 - `README.md`: Description file
 - `requirements.txt`: List of required libraries
 
