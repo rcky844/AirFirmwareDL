@@ -30,6 +30,12 @@ BACKUP_CHECKSUM_FILE = 'checksums.txt'
 
 EARPHONE_MODELS = [
     {
+        "name": "V5.3 TB",
+        "codename": "S523",
+        "chipset": "AB1563E",
+        "legacy_version_prefix": "V310.6.523"
+    },
+    {
         "name": "V5.2 TB",
         "codename": "S505",
         "chipset": "AB1562AE",
