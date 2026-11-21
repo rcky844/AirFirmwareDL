@@ -1,5 +1,11 @@
 {
-    "S505": {
+    "S523_cc pro": {
+        "V31.6.523.5": {
+            "left": "703372d00d61eeeed807273367984ea5861b92044898377cbaeefc4daed97f48",
+            "right": "26d7e56941768ed77207bd1c7f54f225aba3fd8a147108fc838a13f2d16ce3c5"
+        }
+    },
+    "S505_cc ultra": {
         "V310.6.505.133": {
             "left": "bef44919a4be5f48d7b47471ba8721744fa9e432d908fd6ddb486bb7b727b7e1",
             "right": "58f10a319ffd2ae18a064698f462b74c5eb885015278f75c4093bce2e73f3d02"
@@ -37,13 +43,13 @@
             "right": "4cd622986c433af0de0bc2356431a9a92a32bffe13a95f36a41575272479db89"
         }
     },
-    "S305": {
+    "S305_cc ultra": {
         "V31.6.305.162": {
             "left": "4781193dd399278df583d220c5804e5985961370425eed3d339c5c613ba4546f",
             "right": "7cdeff75c420316646c67fe9fad6f5f3e365a1791a55241e351924f411d78bda"
         }
     },
-    "S45": {
+    "S45_cc ultra": {
         "V31.6.45.144": {
             "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",
             "right": "9ac3ff19db8c52dfc1fbef5601fa60b760005774e077498f92b68ff855dcf5e0"

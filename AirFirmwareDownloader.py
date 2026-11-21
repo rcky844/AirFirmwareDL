@@ -32,24 +32,28 @@ EARPHONE_MODELS = [
     {
         "name": "V5.3 TB",
         "codename": "S523",
+        "model": "cc pro",
         "chipset": "AB1563E",
         "legacy_version_prefix": "V310.6.523"
     },
     {
         "name": "V5.2 TB",
         "codename": "S505",
+        "model": "cc ultra",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V310.6.505"
     },
     {
         "name": "V4.9 TB",
         "codename": "S305",
+        "model": "cc ultra",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V31.6.305"
     },
     {
         "name": "V1E",
         "codename": "S45",
+        "model": "cc ultra",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.45"
     }
@@ -59,6 +63,10 @@ def print_ascii_welcome():
     """Print ASCII art and a welcome message."""
     print(Fore.CYAN + ASCII_ART)
     print(Fore.BLUE + Style.BRIGHT + "=" * 50)
+
+def get_model_codename(model):
+    """Combine the short codename and model name (e.g. S523_cc pro)."""
+    return f"{model['codename']}_{model['model']}"
 
 def get_fota_url(model):
     """Build the FOTA index URL for a model."""
@@ -164,13 +172,15 @@ def load_checksums(json_file):
     with open(json_file, 'r') as f:
         checksums = json.load(f)
 
-    # Older releases keyed checksums by display name and by final build number only.
+    # Older releases keyed checksums by display name, short codename, or build number only.
     for model in EARPHONE_MODELS:
-        codename = model['codename']
+        model_codename = get_model_codename(model)
         legacy_entries = checksums.pop(model['name'], {})
-        model_checksums = checksums.setdefault(codename, {})
-        for version, hashes in legacy_entries.items():
-            model_checksums.setdefault(version, hashes)
+        short_entries = checksums.pop(model['codename'], {})
+        model_checksums = checksums.setdefault(model_codename, {})
+        for entries in (legacy_entries, short_entries):
+            for version, hashes in entries.items():
+                model_checksums.setdefault(version, hashes)
 
         prefix = model['legacy_version_prefix']
         for key in list(model_checksums):
@@ -235,11 +245,11 @@ def construct_download_url(model, firmware, side):
 
 def get_backup_folder(model, version):
     """Get the backup folder for a full version string."""
-    return os.path.join(os.getcwd(), BACKUP_DIR, model['codename'], version)
+    return os.path.join(os.getcwd(), BACKUP_DIR, model['codename'], model['model'], version)
 
 def save_checksums(json_file, checksums):
     """Write checksums back to disk with versions sorted by name."""
-    codename_order = {model['codename']: index for index, model in enumerate(EARPHONE_MODELS)}
+    codename_order = {get_model_codename(model): index for index, model in enumerate(EARPHONE_MODELS)}
     ordered = {
         codename: {version: checksums[codename][version] for version in sorted(checksums[codename], key=version_sort_key)}
         for codename in sorted(checksums, key=lambda name: (codename_order.get(name, len(codename_order)), name))
@@ -290,7 +300,7 @@ def backup_is_complete(model, firmware):
 def register_version(model, firmware, checksums, label="New version"):
     """Back up a version and record its checksums if they are not already stored."""
     version = firmware['version']
-    model_checksums = checksums.setdefault(model['codename'], {})
+    model_checksums = checksums.setdefault(get_model_codename(model), {})
     if version in model_checksums and backup_is_complete(model, firmware):
         return False
 
@@ -354,7 +364,7 @@ def main(discover=True):
         try:
             print(Fore.YELLOW + Style.BRIGHT + "Available Earphone Models:")
             for number, model in enumerate(EARPHONE_MODELS, start=1):
-                print(Fore.GREEN + Style.BRIGHT + f"{number}. {model['name']} [{model['codename']}]")
+                print(Fore.GREEN + Style.BRIGHT + f"{number}. {model['name']} [{get_model_codename(model)}]")
             
             model_input = input(Fore.YELLOW + Style.BRIGHT + "\nEnter the number of the earphone model: ").strip()
 
@@ -415,7 +425,7 @@ def main(discover=True):
 
             if os.path.exists(version_folder) and os.path.isfile(left_file_path) and os.path.isfile(right_file_path):
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
-                verify_files(model['codename'], version, left_file_path, right_file_path, checksums)
+                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums)
                 break
 
             backup_paths = get_existing_backup_paths(model, firmware)
@@ -424,7 +434,7 @@ def main(discover=True):
                 shutil.copy2(backup_paths[0], left_file_path)
                 shutil.copy2(backup_paths[1], right_file_path)
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already backed up; copied files from {BACKUP_DIR}.")
-                verify_files(model['codename'], version, left_file_path, right_file_path, checksums)
+                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums)
                 break
 
             os.makedirs(version_folder, exist_ok=True)
@@ -438,7 +448,7 @@ def main(discover=True):
 
             if left_downloaded and right_downloaded:
                 print(Fore.GREEN + Style.BRIGHT + "\nFiles downloaded successfully!")
-                verify_files(model['codename'], version, left_file_path, right_file_path, checksums)
+                verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums)
             else:
                 print(Fore.RED + Style.BRIGHT + "Failed to download one or both files.")
             
