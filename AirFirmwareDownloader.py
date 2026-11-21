@@ -4,6 +4,7 @@ import requests
 import os
 import json
 import re
+import shutil
 import xml.etree.ElementTree as ET
 from urllib.parse import quote, unquote
 from tqdm import tqdm
@@ -190,6 +191,11 @@ def get_match_result(match):
     else:
         return 'Not available in checksums.json'
 
+def verify_files(model_name, version, left_path, right_path, checksums):
+    """Hash both packages and print the checksum comparison."""
+    results = compare_checksums(model_name, version, calculate_sha256(left_path), calculate_sha256(right_path), checksums)
+    print_comparison_results(results)
+
 def get_version_folder(model, version):
     """Get the local download folder for a full version string."""
     return os.path.join(os.getcwd(), version)
@@ -231,6 +237,23 @@ def write_backup_checksums(backup_folder, left_sha256, right_sha256):
 def get_legacy_package_file_name(firmware, side):
     """Build the file name used by older backups, which kept the URL escaping."""
     return f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+
+def get_existing_backup_paths(model, firmware):
+    """Return paths to both backed-up packages for a version, if they exist."""
+    backup_folder = get_backup_folder(model, firmware['version'])
+    paths = []
+    for side in ('left', 'right'):
+        candidates = (get_package_file_name(firmware, side), get_legacy_package_file_name(firmware, side))
+        match = None
+        for name in candidates:
+            path = os.path.join(backup_folder, name)
+            if os.path.isfile(path):
+                match = path
+                break
+        if match is None:
+            return None
+        paths.append(match)
+    return paths
 
 def backup_is_complete(model, firmware):
     """Check whether a version already has backed-up packages and a checksum file."""
@@ -372,10 +395,16 @@ def main(discover=True):
 
             if os.path.exists(version_folder) and os.path.isfile(left_file_path) and os.path.isfile(right_file_path):
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
-                left_sha256 = calculate_sha256(left_file_path)
-                right_sha256 = calculate_sha256(right_file_path)
-                results = compare_checksums(model['name'], version, left_sha256, right_sha256, checksums)
-                print_comparison_results(results)
+                verify_files(model['name'], version, left_file_path, right_file_path, checksums)
+                break
+
+            backup_paths = get_existing_backup_paths(model, firmware)
+            if backup_paths:
+                os.makedirs(version_folder, exist_ok=True)
+                shutil.copy2(backup_paths[0], left_file_path)
+                shutil.copy2(backup_paths[1], right_file_path)
+                print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already backed up; copied files from {BACKUP_DIR}.")
+                verify_files(model['name'], version, left_file_path, right_file_path, checksums)
                 break
 
             os.makedirs(version_folder, exist_ok=True)
@@ -389,10 +418,7 @@ def main(discover=True):
 
             if left_downloaded and right_downloaded:
                 print(Fore.GREEN + Style.BRIGHT + "\nFiles downloaded successfully!")
-                left_sha256 = calculate_sha256(left_file_path)
-                right_sha256 = calculate_sha256(right_file_path)
-                results = compare_checksums(model['name'], version, left_sha256, right_sha256, checksums)
-                print_comparison_results(results)
+                verify_files(model['name'], version, left_file_path, right_file_path, checksums)
             else:
                 print(Fore.RED + Style.BRIGHT + "Failed to download one or both files.")
             

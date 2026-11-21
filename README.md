@@ -4,7 +4,7 @@
 AirFirmware is a Python script that facilitates easy downloading and verification of firmware files for Earphones. The script automates the download process, calculates SHA-256 checksums, and compares them with expected values to ensure the integrity of the firmware.
 
 ## Features
-- Downloading firmware files for various versions
+- Downloading firmware files for various versions; versions already in `Firmware-backup` are copied locally instead of downloaded again
 - Automatic calculation of SHA-256 checksums
 - Optional automatic discovery of new FOTA versions: backups and `checksums.json` are updated when the server publishes a version that is not yet recorded
 - Comparing calculated checksums with those of 100% functional firmware files
