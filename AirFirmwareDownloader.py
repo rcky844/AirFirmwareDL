@@ -28,26 +28,26 @@ CHECKSUM_FILE = 'checksums.json'
 BACKUP_DIR = 'Firmware-backup'
 BACKUP_CHECKSUM_FILE = 'checksums.txt'
 
-EARPHONE_MODELS = {
-    "1": {
+EARPHONE_MODELS = [
+    {
         "name": "V5.2 TB",
         "codename": "S505",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V310.6.505"
     },
-    "2": {
+    {
         "name": "V4.9 TB",
         "codename": "S305",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V31.6.305"
     },
-    "3": {
+    {
         "name": "V1E",
         "codename": "S45",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.45"
     }
-}
+]
 
 def print_ascii_welcome():
     """Print ASCII art and a welcome message."""
@@ -159,7 +159,7 @@ def load_checksums(json_file):
         checksums = json.load(f)
 
     # Older releases keyed checksums by display name and by final build number only.
-    for model in EARPHONE_MODELS.values():
+    for model in EARPHONE_MODELS:
         codename = model['codename']
         legacy_entries = checksums.pop(model['name'], {})
         model_checksums = checksums.setdefault(codename, {})
@@ -346,16 +346,16 @@ def main(discover=True):
     while True:
         try:
             print(Fore.YELLOW + Style.BRIGHT + "Available Earphone Models:")
-            for number, model in EARPHONE_MODELS.items():
+            for number, model in enumerate(EARPHONE_MODELS, start=1):
                 print(Fore.GREEN + Style.BRIGHT + f"{number}. {model['name']} [{model['codename']}]")
             
             model_input = input(Fore.YELLOW + Style.BRIGHT + "\nEnter the number of the earphone model: ").strip()
 
-            if model_input not in EARPHONE_MODELS:
+            if not model_input.isdigit() or not 1 <= int(model_input) <= len(EARPHONE_MODELS):
                 print(Fore.RED + Style.BRIGHT + "Invalid model number provided. Please try again.")
                 continue
 
-            model = EARPHONE_MODELS[model_input]
+            model = EARPHONE_MODELS[int(model_input) - 1]
             print(Fore.CYAN + Style.BRIGHT + f"Checking available versions for {model['name']}...")
             try:
                 firmwares = fetch_firmware_versions(model)
