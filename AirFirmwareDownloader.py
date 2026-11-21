@@ -2,6 +2,9 @@ import hashlib
 import requests
 import os
 import json
+import re
+import xml.etree.ElementTree as ET
+from urllib.parse import quote
 from tqdm import tqdm
 from colorama import Fore, Style, init
 
@@ -15,33 +18,29 @@ ASCII_ART = r"""
 /_/   \_\_|_|  |_|   |_|_|  |_| |_| |_|\_/\_/ \__,_|_|  \___|____/|_____| 
 """
 
+FOTA_BASE_URL = "http://twsfota.198509.xyz/tws_fota_bin"
+FOTA_SUFFIX = "_fota"
+VERSION_PATTERN = re.compile(r"V\d+(?:\.\d+){2,3}")
+CHECKSUM_FILE = 'checksums.json'
+
 EARPHONE_MODELS = {
     "1": {
         "name": "V5.2 TB",
-        "base_url": "http://twsfota.198509.xyz/tws_fota_bin/S505/AB1562AE/S505_cc%20ultra_AB1562AE_V310.6.505.",
-        "versions": {
-            '153': 'Version 153 is available.',
-            '152': 'Version 152 is available.',
-            '135': 'Version 135 is available.',
-            '133': 'Version 133 is available.'
-        },
-        "url_format": lambda version: f"http://twsfota.198509.xyz/tws_fota_bin/S505/AB1562AE/S505_cc%20ultra_AB1562AE_V310.6.505.{version}_fota/S505_cc%20ultra_AB1562AE_V310.6.505.{version}_{{side}}_FotaPackage.bin"
+        "codename": "S505",
+        "chipset": "AB1562AE",
+        "legacy_version_prefix": "V310.6.505"
     },
     "2": {
         "name": "V4.9 TB",
-        "base_url": "http://twsfota.198509.xyz/tws_fota_bin/S305/AB1562AE/",
-        "versions": {
-            '162': 'Version 162 is available.'
-        },
-        "url_format": lambda version: f"http://twsfota.198509.xyz/tws_fota_bin/S305/AB1562AE/S305_cc%20ultra_AB1562AE_V31.6.305.{version}_fota/S305_cc%20ultra_AB1562AE_V31.6.305.{version}_{{side}}_FotaPackage.bin"
+        "codename": "S305",
+        "chipset": "AB1562AE",
+        "legacy_version_prefix": "V31.6.305"
     },
     "3": {
         "name": "V1E",
-        "base_url": "http://twsfota.198509.xyz/tws_fota_bin/S45/AB1562E/",
-        "versions": {
-            '144': 'Version 144 is available.'
-        },
-        "url_format": lambda version: f"http://twsfota.198509.xyz/tws_fota_bin/S45/AB1562E/S45_cc%20ultra_AB1562E_ENC_V31.6.45.{version}_fota/S45_cc%20ultra_AB1562E_ENC_V31.6.45.{version}_{{side}}_FotaPackage.bin"
+        "codename": "S45",
+        "chipset": "AB1562E",
+        "legacy_version_prefix": "V31.6.45"
     }
 }
 
@@ -49,6 +48,66 @@ def print_ascii_welcome():
     """Print ASCII art and a welcome message."""
     print(Fore.CYAN + ASCII_ART)
     print(Fore.BLUE + Style.BRIGHT + "=" * 50)
+
+def get_fota_url(model):
+    """Build the FOTA index URL for a model."""
+    return f"{FOTA_BASE_URL}/{model['codename']}/{model['chipset']}/fota"
+
+def extract_full_version(folder_name):
+    """Extract the full version string (e.g. V310.6.505.153) from a FOTA folder name."""
+    match = VERSION_PATTERN.search(folder_name)
+    return match.group(0) if match else None
+
+def fetch_firmware_versions(model):
+    """Read the FOTA index and return the firmware packages available for a model."""
+    url = get_fota_url(model)
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+
+    root = ET.fromstring(response.content)
+    firmwares = {}
+    for entry in root.iter('entry'):
+        folder = (entry.text or '').strip()
+        if not folder.endswith(FOTA_SUFFIX):
+            continue
+
+        folder_lower = folder.lower()
+        if model['codename'].lower() not in folder_lower or model['chipset'].lower() not in folder_lower:
+            continue
+
+        full_version = extract_full_version(folder)
+        if not full_version:
+            continue
+
+        firmwares[full_version] = {
+            'version': full_version,
+            'folder': folder,
+            'package': folder[:-len(FOTA_SUFFIX)],
+            'source_version': (entry.get('key') or '').strip()
+        }
+
+    if not firmwares:
+        raise ValueError(f"No firmware versions found in {url}")
+    return firmwares
+
+def sort_versions(versions):
+    """Sort full version strings from newest to oldest."""
+    return sorted(versions, key=lambda v: tuple(int(part) for part in v[1:].split('.')), reverse=True)
+
+def resolve_version_input(version_input, firmwares):
+    """Accept a full version string, its final build number, or a FOTA source version."""
+    value = version_input.strip()
+    if value in firmwares:
+        return value
+
+    matches = [v for v in firmwares if v.rsplit('.', 1)[-1] == value]
+    if len(matches) == 1:
+        return matches[0]
+
+    for version, firmware in firmwares.items():
+        if firmware['source_version'] == value:
+            return version
+    return None
 
 def calculate_sha256(file_path):
     """Calculate SHA-256 checksum of a file."""
@@ -61,7 +120,7 @@ def calculate_sha256(file_path):
 def download_file(url, file_path, version):
     """Download a file from a URL with a progress bar."""
     try:
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
         
         total_size = int(response.headers.get('content-length', 0))
@@ -69,9 +128,8 @@ def download_file(url, file_path, version):
             print(Fore.RED + Style.BRIGHT + f"Cannot determine size of the file from URL: {url}")
             return False
         
-        short_name = f"V{version}"
         with tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024, 
-                  desc=short_name, bar_format='{l_bar}{bar} | {n_fmt}/{total_fmt}', 
+                  desc=version, bar_format='{l_bar}{bar} | {n_fmt}/{total_fmt}', 
                   colour='cyan') as bar:
             with open(file_path, 'wb') as file:
                 for chunk in response.iter_content(chunk_size=8192):
@@ -89,11 +147,20 @@ def download_file(url, file_path, version):
 def load_checksums(json_file):
     """Load checksums from a JSON file."""
     with open(json_file, 'r') as f:
-        return json.load(f)
+        checksums = json.load(f)
+
+    # Older releases keyed checksums by the final build number only.
+    for model in EARPHONE_MODELS.values():
+        model_checksums = checksums.get(model['name'], {})
+        prefix = model['legacy_version_prefix']
+        for key in list(model_checksums):
+            if str(key).isdigit():
+                model_checksums[f"{prefix}.{key}"] = model_checksums.pop(key)
+    return checksums
 
 def compare_checksums(model_name, version, left_sha256, right_sha256, checksums):
     """Compare calculated checksums with expected checksums."""
-    expected = checksums.get(model_name, {}).get(str(version), {"left": None, "right": None})
+    expected = checksums.get(model_name, {}).get(version, {"left": None, "right": None})
     return {
         "left_file_checksum": left_sha256,
         "right_file_checksum": right_sha256,
@@ -119,18 +186,25 @@ def get_match_result(match):
     else:
         return 'Not available in checksums.json'
 
-def construct_file_path(model, version, file_type):
-    """Construct the file path for the given model, version and file type."""
-    return os.path.join(
-        os.getcwd(), 
-        f"{model['name']}_{version}", 
-        os.path.basename(model['url_format'](version).format(side=file_type))
-    )
+def get_version_folder(model, version):
+    """Get the local download folder for a full version string."""
+    return os.path.join(os.getcwd(), f"{model['name']}_{version}")
+
+def construct_file_path(model, firmware, side):
+    """Construct the local file path for a firmware package and side."""
+    file_name = f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+    return os.path.join(get_version_folder(model, firmware['version']), file_name)
+
+def construct_download_url(model, firmware, side):
+    """Construct the download URL for a firmware package and side."""
+    folder = quote(firmware['folder'], safe='')
+    file_name = f"{quote(firmware['package'], safe='')}_{side}_FotaPackage.bin"
+    return f"{FOTA_BASE_URL}/{model['codename']}/{model['chipset']}/{folder}/{file_name}"
 
 def main():
     """Main function to run the program."""
     print_ascii_welcome()
-    checksums = load_checksums('checksums.json')
+    checksums = load_checksums(CHECKSUM_FILE)
 
     while True:
         try:
@@ -145,25 +219,31 @@ def main():
                 continue
 
             model = EARPHONE_MODELS[model_input]
-            available_versions = model['versions']
+            print(Fore.CYAN + Style.BRIGHT + f"Checking available versions for {model['name']}...")
+            try:
+                firmwares = fetch_firmware_versions(model)
+            except Exception as e:
+                print(Fore.RED + Style.BRIGHT + f"Could not check firmware versions from {get_fota_url(model)}: {e}")
+                continue
 
-            version_input = input(Fore.YELLOW + Style.BRIGHT + f"Enter the firmware version for {model['name']} (e.g., {next(iter(available_versions))}), or press Enter to display available versions: ").strip()
+            latest_version = sort_versions(firmwares)[0]
+            version_input = input(Fore.YELLOW + Style.BRIGHT + f"Enter the firmware version for {model['name']} (e.g., {latest_version}), or press Enter to display available versions: ").strip()
 
             if not version_input:
                 print(Fore.YELLOW + Style.BRIGHT + f"\nAvailable Versions for {model['name']}:")
-                for v in sorted(available_versions.keys(), reverse=True):
-                    print(Fore.GREEN + Style.BRIGHT + f"{available_versions[v]}")
-                
+                for version in sort_versions(firmwares):
+                    print(Fore.GREEN + Style.BRIGHT + f"Version {version} is available.")
                 version_input = input(Fore.YELLOW + Style.BRIGHT + f"\nPlease enter the firmware version you want to download for {model['name']}: ").strip()
-            
-            if not version_input or version_input not in available_versions:
-                print(Fore.RED + Style.BRIGHT + "Invalid version provided. Exiting...")
-                return
 
-            version = version_input
-            version_folder = os.path.join(os.getcwd(), f"{model['name']}_{version}")
-            left_file_path = construct_file_path(model, version, "left")
-            right_file_path = construct_file_path(model, version, "right")
+            version = resolve_version_input(version_input, firmwares)
+            if version is None:
+                print(Fore.RED + Style.BRIGHT + "Invalid version provided. Please try again.")
+                continue
+
+            firmware = firmwares[version]
+            version_folder = get_version_folder(model, version)
+            left_file_path = construct_file_path(model, firmware, "left")
+            right_file_path = construct_file_path(model, firmware, "right")
 
             if os.path.exists(version_folder) and os.path.isfile(left_file_path) and os.path.isfile(right_file_path):
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
@@ -175,8 +255,8 @@ def main():
 
             os.makedirs(version_folder, exist_ok=True)
 
-            left_file_url = model['url_format'](version).format(side="left")
-            right_file_url = model['url_format'](version).format(side="right")
+            left_file_url = construct_download_url(model, firmware, "left")
+            right_file_url = construct_download_url(model, firmware, "right")
 
             print(Fore.CYAN + Style.BRIGHT + f"Downloading files for {model['name']} version {version}...")
             left_downloaded = download_file(left_file_url, left_file_path, version)
@@ -192,7 +272,7 @@ def main():
                 print(Fore.RED + Style.BRIGHT + "Failed to download one or both files.")
             
             break
-                
+                    
         except KeyboardInterrupt:
             print(Fore.RED + Style.BRIGHT + "\nProcess interrupted by user.")
             return
