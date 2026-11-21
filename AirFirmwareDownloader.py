@@ -233,9 +233,10 @@ def get_backup_folder(model, version):
 
 def save_checksums(json_file, checksums):
     """Write checksums back to disk with versions sorted by name."""
+    codename_order = {model['codename']: index for index, model in enumerate(EARPHONE_MODELS)}
     ordered = {
-        codename: {version: versions[version] for version in sorted(versions, key=version_sort_key)}
-        for codename, versions in checksums.items()
+        codename: {version: checksums[codename][version] for version in sorted(checksums[codename], key=version_sort_key)}
+        for codename in sorted(checksums, key=lambda name: (codename_order.get(name, len(codename_order)), name))
     }
     with open(json_file, 'w') as f:
         json.dump(ordered, f, indent=4)
