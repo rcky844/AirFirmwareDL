@@ -95,9 +95,13 @@ def fetch_firmware_versions(model):
         raise ValueError(f"No firmware versions found in {url}")
     return firmwares
 
+def version_sort_key(version):
+    """Numeric key for ordering full version strings."""
+    return tuple(int(part) for part in version[1:].split('.'))
+
 def sort_versions(versions):
     """Sort full version strings from newest to oldest."""
-    return sorted(versions, key=lambda v: tuple(int(part) for part in v[1:].split('.')), reverse=True)
+    return sorted(versions, key=version_sort_key, reverse=True)
 
 def resolve_version_input(version_input, firmwares):
     """Accept a full version string, its final build number, or a FOTA source version."""
@@ -228,9 +232,13 @@ def get_backup_folder(model, version):
     return os.path.join(os.getcwd(), BACKUP_DIR, model['codename'], version)
 
 def save_checksums(json_file, checksums):
-    """Write checksums back to disk."""
+    """Write checksums back to disk with versions sorted by name."""
+    ordered = {
+        codename: {version: versions[version] for version in sorted(versions, key=version_sort_key)}
+        for codename, versions in checksums.items()
+    }
     with open(json_file, 'w') as f:
-        json.dump(checksums, f, indent=4)
+        json.dump(ordered, f, indent=4)
         f.write('\n')
 
 def write_backup_checksums(backup_folder, left_sha256, right_sha256):
@@ -339,7 +347,7 @@ def main(discover=True):
         try:
             print(Fore.YELLOW + Style.BRIGHT + "Available Earphone Models:")
             for number, model in EARPHONE_MODELS.items():
-                print(Fore.GREEN + Style.BRIGHT + f"{number}. {model['name']}")
+                print(Fore.GREEN + Style.BRIGHT + f"{number}. {model['name']} [{model['codename']}]")
             
             model_input = input(Fore.YELLOW + Style.BRIGHT + "\nEnter the number of the earphone model: ").strip()
 
