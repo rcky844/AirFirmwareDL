@@ -91,7 +91,8 @@ def fetch_firmware_versions(model):
             continue
 
         folder_lower = folder.lower()
-        if model['codename'].lower() not in folder_lower or model['chipset'].lower() not in folder_lower:
+        if (get_model_codename(model).lower() not in folder_lower
+                or model['chipset'].lower() not in folder_lower):
             continue
 
         full_version = extract_full_version(folder)
