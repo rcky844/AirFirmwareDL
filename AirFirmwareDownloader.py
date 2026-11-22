@@ -6,7 +6,7 @@ import json
 import re
 import shutil
 import xml.etree.ElementTree as ET
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlparse
 from tqdm import tqdm
 from colorama import Fore, Style, init
 
@@ -26,6 +26,7 @@ VERSION_PATTERN = re.compile(r"V\d+(?:\.\d+){2,3}")
 INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 CHECKSUM_FILE = 'checksums.json'
 BACKUP_DIR = 'Firmware-backup'
+FOTA_CACHE_DIR = 'FOTA-cache'
 BACKUP_CHECKSUM_FILE = 'checksums.txt'
 CHANGELOG_FILE = 'changelogs.txt'
 PACKAGE_SUFFIXES = {
@@ -302,6 +303,48 @@ def get_fota_url(model):
     """Build the FOTA index URL for a model."""
     return f"{get_fota_base(model)}/fota"
 
+def get_fota_cache_path(model, kind):
+    """Return the local mirror path for a fota or update_info document."""
+    base_path = urlparse(get_fota_base(model)).path.strip('/')
+    return os.path.join(os.getcwd(), FOTA_CACHE_DIR, *base_path.split('/'), kind)
+
+def write_fota_cache(path, content):
+    """Write a metadata copy when missing or changed, returning True when updated."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if os.path.isfile(path):
+        try:
+            with open(path, 'rb') as f:
+                if f.read() == content:
+                    return False
+        except OSError:
+            pass
+
+    with open(path, 'wb') as f:
+        f.write(content)
+    return True
+
+def fetch_fota_document(model, kind):
+    """Fetch a FOTA metadata document, caching it and falling back to the cached copy."""
+    url = f"{get_fota_base(model)}/{kind}"
+    cache_path = get_fota_cache_path(model, kind)
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        content = response.content
+        root = ET.fromstring(content)
+        if write_fota_cache(cache_path, content):
+            print(Fore.GREEN + Style.BRIGHT + f"Saved {kind} copy to {os.path.relpath(cache_path)}.")
+        return root
+    except (requests.RequestException, ET.ParseError) as e:
+        if os.path.isfile(cache_path):
+            print(Fore.YELLOW + Style.BRIGHT + f"Could not fetch {url} ({e}); using cached copy at {os.path.relpath(cache_path)}.")
+            try:
+                with open(cache_path, 'rb') as f:
+                    return ET.fromstring(f.read())
+            except (OSError, ET.ParseError):
+                pass
+        raise
+
 def extract_full_version(folder_name):
     """Extract the full version string (e.g. V310.6.505.153) from a FOTA folder name."""
     match = VERSION_PATTERN.search(folder_name)
@@ -310,10 +353,7 @@ def extract_full_version(folder_name):
 def fetch_firmware_versions(model):
     """Read the FOTA index and return the firmware packages available for a model."""
     url = get_fota_url(model)
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-
-    root = ET.fromstring(response.content)
+    root = fetch_fota_document(model, 'fota')
     firmwares = {}
     for entry in root.iter('entry'):
         folder = (entry.text or '').strip()
@@ -348,11 +388,7 @@ def get_update_info_url(model):
 
 def fetch_changelogs(model):
     """Read update_info and return changelogs keyed by full version string."""
-    url = get_update_info_url(model)
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-
-    root = ET.fromstring(response.content)
+    root = fetch_fota_document(model, 'update_info')
     changelogs = {}
     model_codename = get_model_codename(model).lower()
     chipset = model['chipset'].lower()

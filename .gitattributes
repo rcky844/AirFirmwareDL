@@ -1,0 +1,2 @@
+# Preserve raw FOTA metadata bytes so FOTA-cache/ can be served as an exact mirror.
+FOTA-cache/** -text
