@@ -1,5 +1,23 @@
 {
     "S705_cc ultimate": {
+        "V310.1.705.20": {
+            "fota": "ace35da160b77d1f4a55718e6c00de983ff57f8dce0f0cceb8438419d72af29c"
+        },
+        "V310.1.705.31": {
+            "fota": "e41cd9d1166d64da44152153acb99dc9fdc61fc429609e7193262b4d8ffff9c3"
+        },
+        "V310.1.705.32": {
+            "fota": "d2da6e06824991dfe78c45c762950e498a4cf3664c66c814cf455e77dc7e7eb6"
+        },
+        "V310.1.705.35": {
+            "fota": "17068faf25f8f80ac3e4e99f3d0f8ae8169bd10846716c0857e07a17fed49d66"
+        },
+        "V310.1.705.39": {
+            "fota": "f612c685b4289ace77d7086992b2b75b1ea0d94fa4387066ee75011a85b50a9e"
+        },
+        "V310.1.705.51": {
+            "fota": "249e80041bd33c42cc9af36754ecaa2986ed87b1e93966356ce71e7a5bebee0e"
+        },
         "V310.1.705.59": {
             "fota": "0fcdac7dcb2796e792811268cc6e22719f26db4f516f4b474ae1f727161d30d9"
         }
