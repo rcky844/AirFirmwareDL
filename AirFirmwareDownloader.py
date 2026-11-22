@@ -74,6 +74,13 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V310.6.505"
     },
     {
+        "name": "AirPods Pro 2 V4.6 TB",
+        "codename": "S52",
+        "model": "cc pro",
+        "chipset": "AB1562F",
+        "legacy_version_prefix": "V130.6.52"
+    },
+    {
         "name": "AirPods Pro V4.9 TB",
         "codename": "S305",
         "model": "cc ultra",
@@ -81,11 +88,11 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.305"
     },
     {
-        "name": "AirPods Pro 2 V4.6 TB",
-        "codename": "S52",
+        "name": "AirPods Pro AB1562F",
+        "codename": "S32",
         "model": "cc pro",
         "chipset": "AB1562F",
-        "legacy_version_prefix": "V130.6.52"
+        "legacy_version_prefix": "V130.4.32"
     },
     {
         "name": "AirPods Pro V4.5",
@@ -117,6 +124,13 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.65"
     },
     {
+        "name": "AirPods 3 AB1562U",
+        "codename": "S400",
+        "model": "cc pro",
+        "chipset": "AB1562U",
+        "legacy_version_prefix": "V130.6.400"
+    },
+    {
         "name": "AirPods 3 V1E",
         "codename": "S45",
         "model": "cc ultra",
@@ -138,7 +152,21 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.235"
     },
     {
-        "name": "AirPods 2 V3M/V3U/V3F",
+        "name": "AirPods 2 V3U",
+        "codename": "S230",
+        "model": "cc pro",
+        "chipset": "AB1562U",
+        "legacy_version_prefix": "V130.2.230"
+    },
+    {
+        "name": "AirPods 2 V3F",
+        "codename": "S25",
+        "model": "cc pro",
+        "chipset": "AB1562F",
+        "legacy_version_prefix": "V130.2.25"
+    },
+    {
+        "name": "AirPods 2 V3M",
         "codename": "S23",
         "model": "cc pro",
         "chipset": "AB1562M",
@@ -156,6 +184,12 @@ EARPHONE_MODELS = [
         "model": "Gbuds 2",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.235"
+    },
+    {
+        "codename": "S230",
+        "model": "Xugong Two",
+        "chipset": "AB1562U",
+        "legacy_version_prefix": "V130.2.230"
     },
     {
         "codename": "S52",
