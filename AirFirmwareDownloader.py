@@ -36,6 +36,7 @@ PACKAGE_SUFFIXES = {
     'filesystem': '_FileSystemPackage.bin',
     'fota': '_fota.bin'
 }
+FILESYSTEM_SUFFIXES = ('_FileSystemPackage.bin', '_FileSystemImage.bin')
 
 EARPHONE_MODELS = [
     {
@@ -481,18 +482,25 @@ def remote_file_exists(url):
         return False
 
 def try_download_filesystem(model, firmware, target_folder, version):
-    """Download the optional FileSystemPackage.bin into target_folder when the server has it."""
-    os.makedirs(target_folder, exist_ok=True)
-    file_path = os.path.join(target_folder, get_package_file_name(firmware, 'filesystem'))
-    if os.path.isfile(file_path):
-        return file_path
+    """Check the server for a filesystem image on every call and download whichever suffix it uses."""
+    candidates = []
+    for suffix in FILESYSTEM_SUFFIXES:
+        url = construct_download_url(model, firmware, 'filesystem', suffix=suffix)
+        path = os.path.join(target_folder, f"{sanitize_filename(firmware['package'])}{suffix}")
+        candidates.append((url, path))
 
-    url = construct_download_url(model, firmware, 'filesystem')
-    if not remote_file_exists(url):
+    # Probe the server on every discovery so a newly published image is noticed.
+    available = [(url, path) for url, path in candidates if remote_file_exists(url)]
+
+    for url, path in available + candidates:
+        if os.path.isfile(path):
+            return path
+    if not available:
         return None
 
-    if download_file(url, file_path, f"{version} filesystem"):
-        return file_path
+    url, path = available[0]
+    if download_file(url, path, f"{version} filesystem"):
+        return path
     return None
 
 def load_checksums(json_file):
@@ -572,10 +580,10 @@ def construct_file_path(model, firmware, side):
     """Construct the local file path for a firmware package."""
     return os.path.join(get_version_folder(model, firmware['version']), get_package_file_name(firmware, side))
 
-def construct_download_url(model, firmware, side):
+def construct_download_url(model, firmware, side, suffix=None):
     """Construct the download URL for a firmware package."""
     folder = quote(firmware['folder'], safe='')
-    file_name = f"{quote(firmware['package'], safe='')}{PACKAGE_SUFFIXES[side]}"
+    file_name = f"{quote(firmware['package'], safe='')}{suffix or PACKAGE_SUFFIXES[side]}"
     return f"{get_fota_base(model)}/{folder}/{file_name}"
 
 def get_backup_folder(model, version):
@@ -630,7 +638,7 @@ def save_checksums(json_file, checksums):
 def write_backup_checksums(backup_folder, hashes):
     """Write the checksum file that accompanies backed-up firmware packages."""
     with open(os.path.join(backup_folder, BACKUP_CHECKSUM_FILE), 'w') as f:
-        for side in ('left', 'right', 'filesystem', 'fota'):
+        for side in ('left', 'right', 'headset', 'filesystem', 'fota'):
             value = hashes.get(side)
             if value:
                 f.write(f"{side} - {value}\n")
@@ -640,11 +648,16 @@ def get_legacy_package_file_name(firmware, side):
     return f"{quote(firmware['package'], safe='')}{PACKAGE_SUFFIXES[side]}"
 
 def find_backup_file(backup_folder, firmware, side):
-    """Find a backed-up package by side, allowing legacy escaped names."""
-    for name in (get_package_file_name(firmware, side), get_legacy_package_file_name(firmware, side)):
-        path = os.path.join(backup_folder, name)
-        if os.path.isfile(path):
-            return path
+    """Find a backed-up package by side, allowing legacy escaped names and either filesystem suffix."""
+    suffixes = FILESYSTEM_SUFFIXES if side == 'filesystem' else (PACKAGE_SUFFIXES[side],)
+    for suffix in suffixes:
+        for name in (
+            f"{sanitize_filename(firmware['package'])}{suffix}",
+            f"{quote(firmware['package'], safe='')}{suffix}",
+        ):
+            path = os.path.join(backup_folder, name)
+            if os.path.isfile(path):
+                return path
     return None
 
 def get_existing_backup_paths(model, firmware, sides=None):
@@ -665,15 +678,17 @@ def backup_is_complete(model, firmware):
 
 def copy_filesystem_from_backup(model, firmware, backup_paths, version_folder):
     """Place a backed-up filesystem package in the local version folder when present."""
-    local_path = construct_file_path(model, firmware, 'filesystem')
-    if os.path.isfile(local_path):
-        return local_path
+    for suffix in FILESYSTEM_SUFFIXES:
+        local_path = os.path.join(version_folder, f"{sanitize_filename(firmware['package'])}{suffix}")
+        if os.path.isfile(local_path):
+            return local_path
 
     backup_path = backup_paths.get('filesystem')
     if not backup_path:
         return None
 
     os.makedirs(version_folder, exist_ok=True)
+    local_path = os.path.join(version_folder, os.path.basename(backup_path))
     shutil.copy2(backup_path, local_path)
     print(Fore.GREEN + Style.BRIGHT + "Copied FileSystemPackage from backup.")
     return local_path
@@ -713,9 +728,7 @@ def register_version(model, firmware, checksums, label="New version", changelogs
         changed = True
 
     if not uses_fota_package(model):
-        filesystem_path = backup_paths.get('filesystem')
-        if not filesystem_path:
-            filesystem_path = try_download_filesystem(model, firmware, backup_folder, version)
+        filesystem_path = try_download_filesystem(model, firmware, backup_folder, version)
         if filesystem_path:
             filesystem_hash = calculate_sha256(filesystem_path)
             if hashes.get('filesystem') != filesystem_hash:

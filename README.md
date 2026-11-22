@@ -6,7 +6,7 @@ AirFirmware is a Python script that facilitates easy downloading and verificatio
 ## Features
 - Downloading firmware files for various versions; versions already in `Firmware-backup` are copied locally instead of downloaded again
 - Automatic calculation of SHA-256 checksums
-- Optional download of `FileSystemPackage.bin` when the FOTA folder contains one (e.g. `S23_cc pro_AB1562M_ENC_V130.1.23.200_FileSystemPackage.bin`)
+- Optional download of a filesystem image when the FOTA folder contains one, checking for every discovered version on the server. Both `FileSystemPackage.bin` and `FileSystemImage.bin` naming are supported (e.g. `S30_cc pro_AB1562A_V130.6.30.191_FileSystemImage.bin`)
 - Support for platform models with a `platform` field: they use one combined `<version>_fota.bin` package and a `fota` checksum instead of `left`, `right`, and `filesystem`
 - Automatic changelog retrieval from `<codename>/<chipset>/update_info`, saved as `changelogs.txt` inside each backed-up firmware folder, refreshed whenever a build is requested again, and displayed when available
 - Local mirror of `fota` and `update_info` metadata under `FOTA-cache/`, refreshed when changed and reused automatically if the official server is unavailable; the layout can be served directly as a web root
