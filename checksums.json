@@ -96,6 +96,11 @@
             "right": "4991fd81e9b4e88658c64d0e2124d998e33705aa6491808ba545396ea14bc910"
         }
     },
+    "S605_cc ultimate": {
+        "V310.1.605.27": {
+            "fota": "a7f2fe024271b0df3f1f760646da9ad94a3ea207690155368405ba96432dc0d8"
+        }
+    },
     "S45_cc ultra": {
         "V31.6.45.144": {
             "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",

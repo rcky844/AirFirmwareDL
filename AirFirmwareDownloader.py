@@ -80,6 +80,14 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V130.6.30"
     },
     {
+        "name": "AirPods 4 V3 TB",
+        "platform": "AB157x",
+        "codename": "S605",
+        "model": "cc ultimate",
+        "chipset": "AB1571AM",
+        "legacy_version_prefix": "V310.1.605"
+    },
+    {
         "name": "AirPods 3 V1E",
         "codename": "S45",
         "model": "cc ultra",
