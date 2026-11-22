@@ -78,6 +78,13 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.45"
     },
     {
+        "name": "AirPods 2 V3E",
+        "codename": "S235",
+        "model": "cc ultra",
+        "chipset": "AB1562E",
+        "legacy_version_prefix": "V31.6.235"
+    },
+    {
         "name": "AirPods 2 V3M/V3U/V3F",
         "codename": "S40",
         "model": "cc pro",
@@ -97,6 +104,13 @@ EARPHONE_MODELS = [
         "model": "cc ultra max",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V310.6.25"
+    },
+    {
+        "name": "Unknown AB1562E",
+        "codename": "S235",
+        "model": "Gbuds 2",
+        "chipset": "AB1562E",
+        "legacy_version_prefix": "V31.6.235"
     },
     {
         "name": "Unknown AB1562F",

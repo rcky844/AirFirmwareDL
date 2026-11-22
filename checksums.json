@@ -83,6 +83,32 @@
             "right": "b8989d3b27b5a4e05a3e874a4f12a13b57c89687d935aaa2ec4e54f5b96289e5"
         }
     },
+    "S235_cc ultra": {
+        "V31.6.235.38": {
+            "left": "d4dde405421f3f3fbe1b728f731881c30fd2a16c5ab6601f74aaa4b38168a9f5",
+            "right": "10cf2164a1e27dc7857b448b3a0386368a9cab2bf861fdd96e7922e64eebdac8"
+        },
+        "V31.6.235.125": {
+            "left": "8ef19bae62bdbe765b42b47d449ae2fd35c29873e157304be127bca2ec8dbc7f",
+            "right": "822082d5e4bc43ce7012fba40a3ee0b2f442513408bd0ae56c84d7b185a75cdf"
+        },
+        "V31.6.235.131": {
+            "left": "22cffe8b186f8f7b7160d75d834e96f48dfb1c298a988820bffdfcc058f9ade5",
+            "right": "9ba90b5be47a6f02cbf3d3ec49745fa80743de2da9d8d822b7d5b29fc802b9b5"
+        },
+        "V31.6.235.132": {
+            "left": "1c8fbf8c63aa3ffcdf670848c24fef934f7524d75165b462daac6bfcc686e533",
+            "right": "13b313e53c7ac65c7a7433408d3bdb3ab286c11089014a8ffcba24d6c073c5ca"
+        },
+        "V31.6.235.135": {
+            "left": "f1015b2867e5f5b5317433db7a58cf5e38f40f9f1bdd87e1e237dc9cf09d6c59",
+            "right": "b5f80b6476cabace0752b518a09a4d59c72dc47f67131e8e4b14d7f645e2fe76"
+        },
+        "V31.6.235.138": {
+            "left": "27cfe09e12fb7906c7f685b87d2c7067dae793a24df86f9bdef8f2093100a6b8",
+            "right": "450092cc6263f3e05affec7e1ca4b9eb833af91dda4992e4f3a50967363a1d00"
+        }
+    },
     "S40_cc pro": {
         "V130.2.40.118": {
             "left": "4b3ec83713d57d48ecd54e229145129879c81c3ea2e6febab5abbfd6281dc9da",
@@ -101,6 +127,12 @@
         "V310.6.25.13": {
             "left": "853aefb21415b784ad044456b263fd716e6ebc25d9aecabeb774dc9ab5dfb7f2",
             "right": "10061f5d30294403e252d7dcfc14fdeac505d1c75f74eacd90414d7731f8b7f3"
+        }
+    },
+    "S235_Gbuds 2": {
+        "V31.6.235.26": {
+            "left": "68b30b923fa458d9353c7f07ff4acf380cc6bfcf49e69a467b470208e402e3c8",
+            "right": "025fa5cb77c4589731cf3fea3773c0dcb4d6964c6848e31d74ee758fe04a1dda"
         }
     },
     "S52_GreenBuds": {
