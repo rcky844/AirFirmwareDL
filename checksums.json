@@ -73,13 +73,6 @@
             "right": "4991fd81e9b4e88658c64d0e2124d998e33705aa6491808ba545396ea14bc910"
         }
     },
-    "S23_cc pro": {
-        "V130.1.23.200": {
-            "left": "85747f30e26fe13c835d19b347884bd0232a4ef44f13e966aebbdb6cc503f037",
-            "right": "f8cd9dc083841fe7fb67cb263a3620ed4d4bdfc62dcc85a51a0e9fb2fccad113",
-            "filesystem": "34f9be14aadd36820b0d78612e28deb81fea831c0befb473268202e195112deb"
-        }
-    },
     "S45_cc ultra": {
         "V31.6.45.144": {
             "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",
@@ -88,6 +81,20 @@
         "V31.6.45.153": {
             "left": "5795777a409e996bdf0ce6f9dfeaa4e844a35b924d6484084da5a2aef28b90c1",
             "right": "b8989d3b27b5a4e05a3e874a4f12a13b57c89687d935aaa2ec4e54f5b96289e5"
+        }
+    },
+    "S40_cc pro": {
+        "V130.2.40.118": {
+            "left": "4b3ec83713d57d48ecd54e229145129879c81c3ea2e6febab5abbfd6281dc9da",
+            "right": "8d1c35c5b5cbfde96f6269a944acdbfa1f07ce9c06a4049f62c90278afc50c03",
+            "filesystem": "9877f9fb20acc33cd1bc6766384b23ad270fb204aaa2260fe933dc52c8b5a397"
+        }
+    },
+    "S23_cc pro": {
+        "V130.1.23.200": {
+            "left": "85747f30e26fe13c835d19b347884bd0232a4ef44f13e966aebbdb6cc503f037",
+            "right": "f8cd9dc083841fe7fb67cb263a3620ed4d4bdfc62dcc85a51a0e9fb2fccad113",
+            "filesystem": "34f9be14aadd36820b0d78612e28deb81fea831c0befb473268202e195112deb"
         }
     },
     "H25_cc ultra max": {

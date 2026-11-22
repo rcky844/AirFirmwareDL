@@ -71,18 +71,25 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V130.6.30"
     },
     {
-        "name": "V3M",
-        "codename": "S23",
-        "model": "cc pro",
-        "chipset": "AB1562M",
-        "legacy_version_prefix": "V130.1.23"
-    },
-    {
         "name": "V1E",
         "codename": "S45",
         "model": "cc ultra",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.45"
+    },
+    {
+        "name": "V3M",
+        "codename": "S40",
+        "model": "cc pro",
+        "chipset": "AB1562M",
+        "legacy_version_prefix": "V130.2.40"
+    },
+    {
+        "name": "V3M",
+        "codename": "S23",
+        "model": "cc pro",
+        "chipset": "AB1562M",
+        "legacy_version_prefix": "V130.1.23"
     },
     {
         "name": "V3 Metal (Max V3 TB)",
