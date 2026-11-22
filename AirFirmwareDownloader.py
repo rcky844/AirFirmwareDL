@@ -123,20 +123,20 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V310.6.25"
     },
     {
-        "name": "Unknown AB1562E",
         "codename": "S235",
         "model": "Gbuds 2",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.235"
     },
     {
-        "name": "Unknown AB1562F",
         "codename": "S52",
         "model": "GreenBuds",
         "chipset": "AB1562F",
         "legacy_version_prefix": "V130.6.52"
     }
 ]
+
+MODEL_GROUPS = ('AirPods', 'AirPods Pro', 'AirPods Max', 'Miscellaneous')
 
 def print_ascii_welcome():
     """Print ASCII art and a welcome message."""
@@ -146,6 +146,34 @@ def print_ascii_welcome():
 def get_model_codename(model):
     """Combine the short codename and model name (e.g. S523_cc pro)."""
     return f"{model['codename']}_{model['model']}"
+
+def get_model_name(model):
+    """Return the display name, falling back to codename and chipset."""
+    if model.get('name'):
+        return model['name']
+    return f"{model['codename']} - {model['chipset']}"
+
+def format_model_menu_entry(model):
+    """Format one model for the main menu."""
+    return f"{get_model_name(model)} [{get_model_codename(model)}]"
+
+def get_model_group(model):
+    """Return the main-menu section for a model."""
+    name = model.get('name', '')
+    if name.startswith('AirPods Pro'):
+        return 'AirPods Pro'
+    if name.startswith('AirPods Max'):
+        return 'AirPods Max'
+    if name.startswith('AirPods'):
+        return 'AirPods'
+    return 'Miscellaneous'
+
+def get_menu_models():
+    """Return models ordered by menu section, preserving order within each section."""
+    return [model
+            for group in MODEL_GROUPS
+            for model in EARPHONE_MODELS
+            if get_model_group(model) == group]
 
 def uses_fota_package(model):
     """Return True for platform models that ship one combined fota package."""
@@ -330,7 +358,7 @@ def load_checksums(json_file):
     # Older releases keyed checksums by display name, short codename, or build number only.
     for model in EARPHONE_MODELS:
         model_codename = get_model_codename(model)
-        legacy_entries = checksums.pop(model['name'], {})
+        legacy_entries = checksums.pop(model['name'], {}) if model.get('name') else {}
         short_entries = checksums.pop(model['codename'], {})
         model_checksums = checksums.setdefault(model_codename, {})
         for entries in (legacy_entries, short_entries):
@@ -526,7 +554,7 @@ def register_version(model, firmware, checksums, label="New version", changelogs
                 hashes[side] = calculate_sha256(backup_paths[side])
             changed = True
     else:
-        print(Fore.YELLOW + Style.BRIGHT + f"\n{label} {version} for {model['name']}; updating {BACKUP_DIR} and {CHECKSUM_FILE}...")
+        print(Fore.YELLOW + Style.BRIGHT + f"\n{label} {version} for {get_model_name(model)}; updating {BACKUP_DIR} and {CHECKSUM_FILE}...")
         downloaded = {}
         for side in package_sides:
             path = os.path.join(backup_folder, get_package_file_name(firmware, side))
@@ -602,20 +630,32 @@ def main(discover=True):
     if not discover:
         print(Fore.YELLOW + Style.BRIGHT + "Automatic version discovery is disabled.")
 
+    menu_models = get_menu_models()
+    grouped_models = {
+        group: [model for model in menu_models if get_model_group(model) == group]
+        for group in MODEL_GROUPS
+    }
+
     while True:
         try:
             print(Fore.YELLOW + Style.BRIGHT + "Available Earphone Models:")
-            for number, model in enumerate(EARPHONE_MODELS, start=1):
-                print(Fore.GREEN + Style.BRIGHT + f"{number}. {model['name']} [{get_model_codename(model)}]")
+            number = 1
+            for group in MODEL_GROUPS:
+                if not grouped_models[group]:
+                    continue
+                print(Fore.CYAN + Style.BRIGHT + f"\n{group}:")
+                for model in grouped_models[group]:
+                    print(Fore.GREEN + Style.BRIGHT + f"{number}. {format_model_menu_entry(model)}")
+                    number += 1
             
             model_input = input(Fore.YELLOW + Style.BRIGHT + "\nEnter the number of the earphone model: ").strip()
 
-            if not model_input.isdigit() or not 1 <= int(model_input) <= len(EARPHONE_MODELS):
+            if not model_input.isdigit() or not 1 <= int(model_input) <= len(menu_models):
                 print(Fore.RED + Style.BRIGHT + "Invalid model number provided. Please try again.")
                 continue
 
-            model = EARPHONE_MODELS[int(model_input) - 1]
-            print(Fore.CYAN + Style.BRIGHT + f"Checking available versions for {model['name']}...")
+            model = menu_models[int(model_input) - 1]
+            print(Fore.CYAN + Style.BRIGHT + f"Checking available versions for {get_model_name(model)}...")
             try:
                 firmwares = fetch_firmware_versions(model)
             except Exception as e:
@@ -634,16 +674,16 @@ def main(discover=True):
                     if registered:
                         print(Fore.GREEN + Style.BRIGHT + f"Added/updated {registered} version(s) in {BACKUP_DIR} and {CHECKSUM_FILE}.")
                 except Exception as e:
-                    print(Fore.RED + Style.BRIGHT + f"Could not update backups for {model['name']}: {e}")
+                    print(Fore.RED + Style.BRIGHT + f"Could not update backups for {get_model_name(model)}: {e}")
 
             latest_version = sort_versions(firmwares)[0]
-            version_input = input(Fore.YELLOW + Style.BRIGHT + f"Enter the firmware version for {model['name']} (e.g., {latest_version}), an older full version string, or press Enter to display available versions: ").strip()
+            version_input = input(Fore.YELLOW + Style.BRIGHT + f"Enter the firmware version for {get_model_name(model)} (e.g., {latest_version}), an older full version string, or press Enter to display available versions: ").strip()
 
             if not version_input:
-                print(Fore.YELLOW + Style.BRIGHT + f"\nAvailable Versions for {model['name']}:")
+                print(Fore.YELLOW + Style.BRIGHT + f"\nAvailable Versions for {get_model_name(model)}:")
                 for version in sort_versions(firmwares):
                     print(Fore.GREEN + Style.BRIGHT + f"Version {version} is available.")
-                version_input = input(Fore.YELLOW + Style.BRIGHT + f"\nPlease enter the firmware version you want to download for {model['name']}: ").strip()
+                version_input = input(Fore.YELLOW + Style.BRIGHT + f"\nPlease enter the firmware version you want to download for {get_model_name(model)}: ").strip()
 
             entered_version = version_input
             if VERSION_PATTERN.fullmatch(entered_version) is None and entered_version.isdigit():
@@ -681,7 +721,7 @@ def main(discover=True):
                 if not uses_fota_package(model):
                     verify_paths['filesystem'] = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
                 print_changelog(version, changelog_entry)
-                print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
+                print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {get_model_name(model)} is already downloaded.")
                 verify_files(get_model_codename(model), version, verify_paths, checksums)
                 break
 
@@ -692,7 +732,7 @@ def main(discover=True):
                 if not uses_fota_package(model):
                     verify_paths['filesystem'] = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
                 print_changelog(version, changelog_entry)
-                print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already backed up; copied files from {BACKUP_DIR}.")
+                print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {get_model_name(model)} is already backed up; copied files from {BACKUP_DIR}.")
                 verify_files(get_model_codename(model), version, verify_paths, checksums)
                 break
 
@@ -700,7 +740,7 @@ def main(discover=True):
             if not uses_fota_package(model):
                 verify_paths['filesystem'] = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
 
-            print(Fore.CYAN + Style.BRIGHT + f"Downloading files for {model['name']} version {version}...")
+            print(Fore.CYAN + Style.BRIGHT + f"Downloading files for {get_model_name(model)} version {version}...")
             downloaded = {
                 side: download_file(construct_download_url(model, firmware, side), local_paths[side], f"{version} {side}")
                 for side in package_sides
