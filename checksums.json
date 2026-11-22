@@ -112,6 +112,26 @@
             "fota": "a7f2fe024271b0df3f1f760646da9ad94a3ea207690155368405ba96432dc0d8"
         }
     },
+    "S62_cc pro": {
+        "V31.6.62.8": {
+            "left": "3ba7748e77c13c7590c712bf7f40590681d6917d983472db33766a32f5f1f5e4",
+            "right": "91f50e67bd5c0d933f73f04ba464e5827cf80bcf2425fd9003207e5f9710a664"
+        },
+        "V31.6.62.10": {
+            "left": "5e3a88a95110ca98a813e7a13d61f0cc358212e834360f5bd44d13a8ce06accd",
+            "right": "fe1710819c93269c7da97d198457d90f92766d06056570347bd0cc134a06e706"
+        },
+        "V31.6.62.15": {
+            "left": "4ff7b48a3d27145f97b9ebe4f9742873ea7a8b4e2c624ca2959a83c714d0ac5f",
+            "right": "ccad07295af0565ed2ab19c919ed15b54f6f270efe5369fbece096fa13209832"
+        }
+    },
+    "S65_cc ultra": {
+        "V31.6.65.6": {
+            "left": "639d8b5fe8c59176fcecbe73bd0dd7b1cb966bcc8332a1455be2bf4e0e934b0c",
+            "right": "eb0ead42ecc389336d8b05e5ff9fb617942b5ea5d684b2aee3f5dbed79700196"
+        }
+    },
     "S45_cc ultra": {
         "V31.6.45.144": {
             "left": "4ea303f5c10572d2c3347a8e8f5488cb753fd40a411deafeff3513645d735c85",
