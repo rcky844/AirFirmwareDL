@@ -228,6 +228,22 @@
             "right": "10061f5d30294403e252d7dcfc14fdeac505d1c75f74eacd90414d7731f8b7f3"
         }
     },
+    "H23_cc pro max": {
+        "V152.6.23.50": {
+            "headset": "fa04d68ebfba67c22d99be9d0436101fed8c0ba7442dc121b565d21e8c682ebe",
+            "filesystem": "c31ce7d73191ba6ba56c25bf10dd91f7e919cdaf5a9f6f804939c81f0da9f03c"
+        }
+    },
+    "H20_cc pro max": {
+        "V152.6.20.125": {
+            "headset": "6b1bbbe3ac3e1b0f86637d065d079123d1ef76822bfde3b1a8195074ba458abe",
+            "filesystem": "409d9a3784b091883ab4fdb2319cd9d3e6f98ea326c543bdb53f18f93c90c3ab"
+        },
+        "V152.6.20.126": {
+            "headset": "b716a29240f406a95a39cca3ca070242f13eec8abc374956e7ff09fa9ddff7f6",
+            "filesystem": "409d9a3784b091883ab4fdb2319cd9d3e6f98ea326c543bdb53f18f93c90c3ab"
+        }
+    },
     "S235_Gbuds 2": {
         "V31.6.235.26": {
             "left": "68b30b923fa458d9353c7f07ff4acf380cc6bfcf49e69a467b470208e402e3c8",

@@ -19,8 +19,8 @@ ASCII_ART = r"""
  / ___ \| | |  |  _| | | |  | | | | | \ V  V / (_| | | |  __/ |_| | |___ 
 /_/   \_\_|_|  |_|   |_|_|  |_| |_| |_|\_/\_/ \__,_|_|  \___|____/|_____| 
 """
-
-FOTA_BASE_URL = "http://twsfota.198509.xyz/tws_fota_bin"
+HEADSET_FOTA_BASE_URL = "http://twsfota.198509.xyz/headset_fota_bin"
+TWS_FOTA_BASE_URL = "http://twsfota.198509.xyz/tws_fota_bin"
 FOTA_SUFFIX = "_fota"
 VERSION_PATTERN = re.compile(r"V\d+(?:\.\d+){2,3}")
 INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
@@ -31,6 +31,7 @@ CHANGELOG_FILE = 'changelogs.txt'
 PACKAGE_SUFFIXES = {
     'left': '_left_FotaPackage.bin',
     'right': '_right_FotaPackage.bin',
+    'headset': '_FotaPackage.bin',
     'filesystem': '_FileSystemPackage.bin',
     'fota': '_fota.bin'
 }
@@ -177,7 +178,22 @@ EARPHONE_MODELS = [
         "codename": "H25",
         "model": "cc ultra max",
         "chipset": "AB1562AE",
+        "base_url_override": "S",
         "legacy_version_prefix": "V310.6.25"
+    },
+    {
+        "name": "AirPods Max V2 Metal",
+        "codename": "H23",
+        "model": "cc pro max",
+        "chipset": "AB1561M",
+        "legacy_version_prefix": "V152.6.23"
+    },
+    {
+        "name": "AirPods Max V3P",
+        "codename": "H20",
+        "model": "cc pro max",
+        "chipset": "AB1561M",
+        "legacy_version_prefix": "V152.6.20"
     },
     {
         "codename": "S235",
@@ -242,9 +258,14 @@ def uses_fota_package(model):
     """Return True for platform models that ship one combined fota package."""
     return bool(model.get('platform'))
 
+def uses_headset_package(model):
+    """Return True for platform models that ship headset fota package."""
+    prefix = model.get('base_url_override') or model.get('codename', '')[:1]
+    return prefix == 'H'
+
 def get_package_sides(model):
     """Return the package sides used by a model."""
-    return ('fota',) if uses_fota_package(model) else ('left', 'right')
+    return ('fota',) if uses_fota_package(model) else ('headset',) if uses_headset_package(model) else ('left', 'right')
 
 def get_all_package_sides(model):
     """Return every package type that may be stored for a model."""
@@ -255,9 +276,16 @@ def get_all_package_sides(model):
 
 def get_fota_base(model):
     """Build the model-specific FOTA URL prefix."""
+    mapping = {'H': HEADSET_FOTA_BASE_URL, 'S': TWS_FOTA_BASE_URL}
+    prefix = model.get('base_url_override') or model['codename'][:1]
+    base_url = mapping.get(prefix)
+
+    if not base_url:
+        raise ValueError(f"Unsupported FOTA base prefix '{prefix}' for model: {model['codename']}")
+
     if uses_fota_package(model):
-        return f"{FOTA_BASE_URL}/{model['platform']}/{model['codename']}/{model['chipset']}"
-    return f"{FOTA_BASE_URL}/{model['codename']}/{model['chipset']}"
+        return f"{base_url}/{model['platform']}/{model['codename']}/{model['chipset']}"
+    return f"{base_url}/{model['codename']}/{model['chipset']}"
 
 def get_fota_url(model):
     """Build the FOTA index URL for a model."""
