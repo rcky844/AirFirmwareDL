@@ -7,6 +7,7 @@ AirFirmware is a Python script that facilitates easy downloading and verificatio
 - Downloading firmware files for various versions; versions already in `Firmware-backup` are copied locally instead of downloaded again
 - Automatic calculation of SHA-256 checksums
 - Optional download of `FileSystemPackage.bin` when the FOTA folder contains one (e.g. `S23_cc pro_AB1562M_ENC_V130.1.23.200_FileSystemPackage.bin`)
+- Automatic changelog retrieval from `<codename>/<chipset>/update_info`, saved as `changelogs.txt` inside each backed-up firmware folder, refreshed whenever a build is requested again, and displayed when available
 - Optional automatic discovery of new FOTA versions: backups and `checksums.json` are updated when the server publishes a version that is not yet recorded
 - Comparing calculated checksums with those of 100% functional firmware files
 - Colorful and user-friendly console interface
@@ -46,7 +47,7 @@ Check out this video to see how the script works:
    python AirFirmwareDownloader.py
    ```
    Automatic discovery is enabled by default. Pass `--no-discover` (or `-n`) to skip backing up newly discovered versions and updating `checksums.json`; use `--discover` to enable it explicitly.
-2. Select an earphone model. The script checks the available firmware versions from `http://twsfota.198509.xyz/tws_fota_bin/<codename>/<chipset>/fota`. Any versions not yet in `checksums.json` are downloaded into `Firmware-backup`, checksummed, and recorded automatically.
+2. Select an earphone model. The script checks the available firmware versions from `http://twsfota.198509.xyz/tws_fota_bin/<codename>/<chipset>/fota` and changelogs from `http://twsfota.198509.xyz/tws_fota_bin/<codename>/<chipset>/update_info`. Any versions not yet in `checksums.json` are downloaded into `Firmware-backup`, checksummed, recorded, and given a `changelogs.txt` file in their backup folder automatically.
 3. Enter the full firmware version you want to download (e.g., `V310.6.505.153`). Press Enter to list all versions reported by the FOTA server. The final build number (e.g., `153`) or a FOTA source version string is also accepted. Older versions not listed by FOTA can be entered manually (full string or build number); they are backed up and added to `checksums.json` the same way.
 4. The script will download the files and display the checksum verification results.
 
@@ -65,7 +66,7 @@ Check out this video to see how the script works:
 ## Project Structure
 - `AirFirmwareDownloader.py`: Main script
 - `checksums.json`: File containing expected checksums keyed by model codename (e.g., `S523_cc pro`) and full firmware version string (e.g., `V310.6.505.153`); entries may also include a `filesystem` checksum for an available `FileSystemPackage.bin`
-- `Firmware-backup/`: Folder containing pre-downloaded firmware `.bin` files and corresponding checksum files (`checksums.txt`), organized as `<codename>/<model>/<version>` (e.g., `S523/cc pro/V31.6.523.5`)
+- `Firmware-backup/`: Folder containing pre-downloaded firmware `.bin` files, checksums (`checksums.txt`), and changelogs (`changelogs.txt`), organized as `<codename>/<model>/<version>` (e.g., `S523/cc pro/V31.6.523.5`)
 - `README.md`: Description file
 - `requirements.txt`: List of required libraries
 

@@ -27,6 +27,7 @@ INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 CHECKSUM_FILE = 'checksums.json'
 BACKUP_DIR = 'Firmware-backup'
 BACKUP_CHECKSUM_FILE = 'checksums.txt'
+CHANGELOG_FILE = 'changelogs.txt'
 FILESYSTEM_CHECKSUM_KEY = 'filesystem'
 PACKAGE_SUFFIXES = {
     'left': '_left_FotaPackage.bin',
@@ -171,6 +172,32 @@ def fetch_firmware_versions(model):
     if not firmwares:
         raise ValueError(f"No firmware versions found in {url}")
     return firmwares
+
+def get_update_info_url(model):
+    """Build the update-info URL for a model."""
+    return f"{FOTA_BASE_URL}/{model['codename']}/{model['chipset']}/update_info"
+
+def fetch_changelogs(model):
+    """Read update_info and return changelogs keyed by full version string."""
+    url = get_update_info_url(model)
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+
+    root = ET.fromstring(response.content)
+    changelogs = {}
+    model_codename = get_model_codename(model).lower()
+    chipset = model['chipset'].lower()
+    for entry in root.iter('entry'):
+        key = (entry.get('key') or '').strip()
+        key_lower = key.lower()
+        if model_codename not in key_lower or chipset not in key_lower:
+            continue
+
+        version = extract_full_version(key)
+        changelog = (entry.text or '').strip()
+        if version and changelog:
+            changelogs[version] = {'changelog': changelog, 'source': key}
+    return changelogs
 
 def version_sort_key(version):
     """Numeric key for ordering full version strings."""
@@ -351,6 +378,40 @@ def get_backup_folder(model, version):
     """Get the backup folder for a full version string."""
     return os.path.join(os.getcwd(), BACKUP_DIR, model['codename'], model['model'], version)
 
+def get_changelog_entry(changelogs, firmware):
+    """Return the changelog entry for a firmware version when available."""
+    if not changelogs:
+        return None
+    return changelogs.get(firmware['version'])
+
+def format_changelog(changelog_entry):
+    """Return a changelog as plain text with real line breaks."""
+    return (changelog_entry.get('changelog') or '').replace('\\n', '\n').strip()
+
+def print_changelog(version, changelog_entry):
+    """Show a build's changelog when one is available."""
+    if not changelog_entry:
+        return
+    print(Fore.CYAN + Style.BRIGHT + f"\nChangelog for {version}:")
+    print(Fore.CYAN + format_changelog(changelog_entry))
+
+def write_changelog_file(folder, version, changelog_entry):
+    """Write a firmware folder's changelog file, returning True when it changed."""
+    path = os.path.join(folder, CHANGELOG_FILE)
+    text = format_changelog(changelog_entry)
+    if os.path.isfile(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                if f.read().strip() == text:
+                    return False
+        except OSError:
+            pass
+
+    os.makedirs(folder, exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(f"{text}\n")
+    return True
+
 def save_checksums(json_file, checksums):
     """Write checksums back to disk with versions sorted by name."""
     codename_order = {get_model_codename(model): index for index, model in enumerate(EARPHONE_MODELS)}
@@ -411,8 +472,8 @@ def copy_filesystem_from_backup(model, firmware, backup_paths, version_folder):
     print(Fore.GREEN + Style.BRIGHT + "Copied FileSystemPackage from backup.")
     return local_path
 
-def register_version(model, firmware, checksums, label="New version"):
-    """Back up a version and record its checksums, including an optional filesystem package."""
+def register_version(model, firmware, checksums, label="New version", changelogs=None):
+    """Back up a version and record its checksums, changelog, and optional filesystem package."""
     version = firmware['version']
     model_checksums = checksums.setdefault(get_model_codename(model), {})
     stored_hashes = model_checksums.get(version)
@@ -454,6 +515,12 @@ def register_version(model, firmware, checksums, label="New version"):
             hashes[FILESYSTEM_CHECKSUM_KEY] = filesystem_hash
             changed = True
 
+    changelog_entry = get_changelog_entry(changelogs, firmware)
+    changelog_saved = bool(changelog_entry and write_changelog_file(backup_folder, version, changelog_entry))
+    if changelog_saved:
+        changed = True
+        print(Fore.GREEN + Style.BRIGHT + f"Saved changelog for {version} to {BACKUP_DIR}.")
+
     if changed or not stored_hashes:
         write_backup_checksums(backup_folder, hashes)
         model_checksums[version] = hashes
@@ -466,10 +533,10 @@ def register_version(model, firmware, checksums, label="New version"):
             print(Fore.GREEN + Style.BRIGHT + f"Registered version {version} with checksums.")
     return changed
 
-def register_new_versions(model, firmwares, checksums):
+def register_new_versions(model, firmwares, checksums, changelogs=None):
     """Back up every FOTA version that is not yet fully recorded."""
     return sum(1 for version in sort_versions(firmwares)
-               if register_version(model, firmwares[version], checksums))
+               if register_version(model, firmwares[version], checksums, changelogs=changelogs))
 
 def build_manual_firmware(firmwares, version):
     """Build package metadata for a manually entered full version string."""
@@ -521,9 +588,15 @@ def main(discover=True):
                 print(Fore.RED + Style.BRIGHT + f"Could not check firmware versions from {get_fota_url(model)}: {e}")
                 continue
 
+            try:
+                changelogs = fetch_changelogs(model)
+            except Exception as e:
+                changelogs = {}
+                print(Fore.YELLOW + Style.BRIGHT + f"Could not check changelogs from {get_update_info_url(model)}: {e}")
+
             if discover:
                 try:
-                    registered = register_new_versions(model, firmwares, checksums)
+                    registered = register_new_versions(model, firmwares, checksums, changelogs)
                     if registered:
                         print(Fore.GREEN + Style.BRIGHT + f"Added/updated {registered} version(s) in {BACKUP_DIR} and {CHECKSUM_FILE}.")
                 except Exception as e:
@@ -553,10 +626,12 @@ def main(discover=True):
                 print(Fore.YELLOW + Style.BRIGHT + f"Version {version} is not listed by FOTA; treating it as a manual entry.")
 
             firmware = firmwares[version]
+            changelog_entry = get_changelog_entry(changelogs, firmware)
             if discover:
                 try:
                     register_version(model, firmware, checksums,
-                                     "Manually entered version" if firmware['source_version'] == 'manual' else "New version")
+                                     "Manually entered version" if firmware['source_version'] == 'manual' else "New version",
+                                     changelogs=changelogs)
                 except Exception as e:
                     print(Fore.RED + Style.BRIGHT + f"Could not update backups for version {version}: {e}")
 
@@ -567,6 +642,7 @@ def main(discover=True):
 
             if os.path.exists(version_folder) and os.path.isfile(left_file_path) and os.path.isfile(right_file_path):
                 filesystem_path = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
+                print_changelog(version, changelog_entry)
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already downloaded.")
                 verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums, filesystem_path)
                 break
@@ -576,6 +652,7 @@ def main(discover=True):
                 shutil.copy2(backup_paths['left'], left_file_path)
                 shutil.copy2(backup_paths['right'], right_file_path)
                 filesystem_path = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
+                print_changelog(version, changelog_entry)
                 print(Fore.GREEN + Style.BRIGHT + f"Version {version} for {model['name']} is already backed up; copied files from {BACKUP_DIR}.")
                 verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums, filesystem_path)
                 break
@@ -593,6 +670,7 @@ def main(discover=True):
                 filesystem_path = copy_filesystem_from_backup(model, firmware, backup_paths, version_folder)
                 if not filesystem_path and not discover:
                     filesystem_path = try_download_filesystem(model, firmware, version_folder, version)
+                print_changelog(version, changelog_entry)
                 print(Fore.GREEN + Style.BRIGHT + "\nFiles downloaded successfully!")
                 verify_files(get_model_codename(model), version, left_file_path, right_file_path, checksums, filesystem_path)
             else:
