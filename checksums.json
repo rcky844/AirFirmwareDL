@@ -244,6 +244,12 @@
             "filesystem": "409d9a3784b091883ab4fdb2319cd9d3e6f98ea326c543bdb53f18f93c90c3ab"
         }
     },
+    "G01_Ailix Glasses": {
+        "V331.1.1.19": {
+            "left": "ff2d69f647391cfbbc944fd3157e02a89d94f135474de3a7e123af7f778c1ec6",
+            "right": "6a11a528dedb2c497f82a2b414bd53930318cb5b625f7b085df0d3bd24e97873"
+        }
+    },
     "S235_Gbuds 2": {
         "V31.6.235.26": {
             "left": "68b30b923fa458d9353c7f07ff4acf380cc6bfcf49e69a467b470208e402e3c8",

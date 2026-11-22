@@ -196,6 +196,13 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V152.6.20"
     },
     {
+        "name": "ACRO LJ 01",
+        "codename": "G01",
+        "model": "Ailix Glasses",
+        "chipset": "AB1563E",
+        "legacy_version_prefix": "V331.1.1"
+    },
+    {
         "codename": "S235",
         "model": "Gbuds 2",
         "chipset": "AB1562E",
@@ -276,7 +283,11 @@ def get_all_package_sides(model):
 
 def get_fota_base(model):
     """Build the model-specific FOTA URL prefix."""
-    mapping = {'H': HEADSET_FOTA_BASE_URL, 'S': TWS_FOTA_BASE_URL}
+    mapping = {
+        'H': HEADSET_FOTA_BASE_URL,
+        'S': TWS_FOTA_BASE_URL,
+        'G': TWS_FOTA_BASE_URL
+    }
     prefix = model.get('base_url_override') or model['codename'][:1]
     base_url = mapping.get(prefix)
 
