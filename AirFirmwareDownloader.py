@@ -37,6 +37,14 @@ PACKAGE_SUFFIXES = {
 
 EARPHONE_MODELS = [
     {
+        "name": "AirPods Pro 3 V7 TB",
+        "platform": "AB157x",
+        "codename": "S865",
+        "model": "cc ultimate",
+        "chipset": "AB1571AM",
+        "legacy_version_prefix": "V310.1.865"
+    },
+    {
         "name": "AirPods Pro 2 V5.3 TB",
         "platform": "AB157x",
         "codename": "S705",

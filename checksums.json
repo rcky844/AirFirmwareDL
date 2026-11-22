@@ -1,4 +1,9 @@
 {
+    "S865_cc ultimate": {
+        "V310.1.865.10": {
+            "fota": "47e72be03d235be7607bf3ec632df9a8120a7c6a1815623709a33dbfcad44615"
+        }
+    },
     "S705_cc ultimate": {
         "V310.1.705.20": {
             "fota": "ace35da160b77d1f4a55718e6c00de983ff57f8dce0f0cceb8438419d72af29c"
