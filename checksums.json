@@ -244,6 +244,12 @@
             "filesystem": "409d9a3784b091883ab4fdb2319cd9d3e6f98ea326c543bdb53f18f93c90c3ab"
         }
     },
+    "F03_cc clip": {
+        "V331.1.3.8": {
+            "left": "8b4c62801697b06d2a4376d583b935942a214bde8dcb3d7191e0b3e6ad88249c",
+            "right": "8b4c62801697b06d2a4376d583b935942a214bde8dcb3d7191e0b3e6ad88249c"
+        }
+    },
     "G01_Ailix Glasses": {
         "V331.1.1.19": {
             "left": "ff2d69f647391cfbbc944fd3157e02a89d94f135474de3a7e123af7f778c1ec6",

@@ -197,6 +197,12 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V152.6.20"
     },
     {
+        "codename": "F03",
+        "model": "cc clip",
+        "chipset": "AB1563E",
+        "legacy_version_prefix": "V331.1.3"
+    },
+    {
         "name": "ACRO LJ 01",
         "codename": "G01",
         "model": "Ailix Glasses",
@@ -287,7 +293,8 @@ def get_fota_base(model):
     mapping = {
         'H': HEADSET_FOTA_BASE_URL,
         'S': TWS_FOTA_BASE_URL,
-        'G': TWS_FOTA_BASE_URL
+        'G': TWS_FOTA_BASE_URL,
+        'F': TWS_FOTA_BASE_URL
     }
     prefix = model.get('base_url_override') or model['codename'][:1]
     base_url = mapping.get(prefix)
