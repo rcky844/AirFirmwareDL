@@ -36,63 +36,63 @@ PACKAGE_SUFFIXES = {
 
 EARPHONE_MODELS = [
     {
-        "name": "V5.3 TB",
+        "name": "AirPods Pro 2 V5.3 TB",
         "codename": "S523",
         "model": "cc pro",
         "chipset": "AB1563E",
         "legacy_version_prefix": "V310.6.523"
     },
     {
-        "name": "V5.2 TB",
+        "name": "AirPods Pro 2 V5.2 TB",
         "codename": "S505",
         "model": "cc ultra",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V310.6.505"
     },
     {
-        "name": "V4.9 TB",
+        "name": "AirPods Pro V4.9 TB",
         "codename": "S305",
         "model": "cc ultra",
         "chipset": "AB1562AE",
         "legacy_version_prefix": "V31.6.305"
     },
     {
-        "name": "V4.6 TB",
+        "name": "AirPods Pro 2 V4.6 TB",
         "codename": "S52",
         "model": "cc pro",
         "chipset": "AB1562F",
         "legacy_version_prefix": "V130.6.52"
     },
     {
-        "name": "V4.5",
+        "name": "AirPods Pro V4.5",
         "codename": "S30",
         "model": "cc pro",
         "chipset": "AB1562A",
         "legacy_version_prefix": "V130.6.30"
     },
     {
-        "name": "V1E",
+        "name": "AirPods 3 V1E",
         "codename": "S45",
         "model": "cc ultra",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.45"
     },
     {
-        "name": "V3M",
+        "name": "AirPods 2 V3M/V3U/V3F",
         "codename": "S40",
         "model": "cc pro",
         "chipset": "AB1562M",
         "legacy_version_prefix": "V130.2.40"
     },
     {
-        "name": "V3M",
+        "name": "AirPods 2 V3M/V3U/V3F",
         "codename": "S23",
         "model": "cc pro",
         "chipset": "AB1562M",
         "legacy_version_prefix": "V130.1.23"
     },
     {
-        "name": "V3 Metal (Max V3 TB)",
+        "name": "AirPods Max V3 Metal (Max V3 TB)",
         "codename": "H25",
         "model": "cc ultra max",
         "chipset": "AB1562AE",
