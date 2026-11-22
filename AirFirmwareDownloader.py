@@ -110,18 +110,18 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V31.6.45"
     },
     {
+        "name": "AirPods 3 V1",
+        "codename": "S40",
+        "model": "cc pro",
+        "chipset": "AB1562M",
+        "legacy_version_prefix": "V130.2.40"
+    },
+    {
         "name": "AirPods 2 V3E",
         "codename": "S235",
         "model": "cc ultra",
         "chipset": "AB1562E",
         "legacy_version_prefix": "V31.6.235"
-    },
-    {
-        "name": "AirPods 2 V3M/V3U/V3F",
-        "codename": "S40",
-        "model": "cc pro",
-        "chipset": "AB1562M",
-        "legacy_version_prefix": "V130.2.40"
     },
     {
         "name": "AirPods 2 V3M/V3U/V3F",
