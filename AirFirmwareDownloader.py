@@ -45,6 +45,13 @@ EARPHONE_MODELS = [
         "legacy_version_prefix": "V310.1.865"
     },
     {
+        "name": "AirPods Pro 3 V6 TB",
+        "codename": "S82",
+        "model": "cc pro",
+        "chipset": "AB1563E",
+        "legacy_version_prefix": "V31.6.82"
+    },
+    {
         "name": "AirPods Pro 2 V5.3 TB",
         "platform": "AB157x",
         "codename": "S705",
